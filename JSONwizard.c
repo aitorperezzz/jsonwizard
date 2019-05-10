@@ -3,94 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-// DEFINES.
-// Lengths of variables.
-#define STRING_LENGTH 100
-#define NUMBER_WORDS 20
-#define NUMBER_OBJECTS 20
-
-// Result codes.
-typedef enum resultCode_enum
-{
-  JSON_OK,
-  JSON_ERROR,
-  JSON_QUIT,
-} RESULTCODE;
-
-
-// STRUCTURES.
-// Enum for the type of node.
-typedef enum nodeType_enum
-{
-  JSON_NULL, /* Node has not a valid type yet. */
-  JSON_STRING,
-  JSON_INTEGER,
-  JSON_BOOLEAN,
-  JSON_ARRAY,
-  JSON_OBJECT
-} NODETYPE;
-
-// Enum for the boolean codes.
-typedef enum boolean_enum
-{
-  JSON_TRUE,
-  JSON_FALSE,
-  JSON_UNKNOWN
-} BOOLEAN;
-
-// Node structure.
-struct node_st
-{
-  NODETYPE type;
-  char key[STRING_LENGTH + 1];
-  struct node_st *parent;
-  void *data;
-};
-typedef struct node_st NODE;
-
-// Data pointed to when the node is of type object.
-struct object_data
-{
-  int childNumber;
-  NODE *objectPointers[NUMBER_OBJECTS];
-};
-typedef struct object_data OBJDATA;
-
-// TODO: create a structure for the array data.
-
-
-// PROTOTYPES.
-int resetCommand(char **, int *);
-int parseCommand(char *, char **, int *);
-int printCommand(char **, int);
-int executeCommand(char **, int, NODE **);
-int printHelp(void);
-
-NODE *createNode(void);
-int setType(NODE *, int);
-int validateType(int type);
-int setKey(NODE *, char *);
-int setChildNumber(NODE *, int);
-int initializeData(NODE *);
-int initializeNode(NODE *);
-
-NODE *searchByKey(NODE *, char *);
-
-int jsonAppend(NODE **, char *, char *);
-
-int jsonModify(NODE *, char *, char *, char *);
-int typeStringToCode(char *);
-int setData(NODE *, char *);
-int getBooleanFromString(char *data);
-int initializeObjectData(OBJDATA *objData);
-
-int jsonDelete(NODE **, char *);
-int jsonFreeNode(NODE *);
-
-int jsonPrint(NODE *, char *);
-int printBlanks(int);
-int printNode(NODE *, int);
+#include "JSONwizard.h"
+#include "print.h"
 
 // MAIN.
 int main(int argc, char argv[])
@@ -102,7 +16,7 @@ int main(int argc, char argv[])
   // Variable to store the number of words in the current command.
   int count = 0;
 
-  // Variables to store the command words.
+  // Variables to store the words in the command.
   char *words[NUMBER_WORDS];
   for (int i = 0; i < NUMBER_WORDS; i++)
   {
@@ -112,6 +26,12 @@ int main(int argc, char argv[])
 
   // Create the root node of the tree.
   NODE *root = createNode();
+  if (root == NULL)
+  {
+    return -1;
+  }
+
+  // Set initial values for the root.
   setKey(root, "root");
   setType(root, JSON_OBJECT);
 
@@ -127,14 +47,14 @@ int main(int argc, char argv[])
     printf("\nJSONwizard> ");
     if (fgets(input, inputLength, stdin) == NULL)
     {
-      printf("There was an error reading the command. Continuing\n");
+      printf("There was an error reading the command. Continuing.\n");
       continue;
     }
 
     // Parse the input into words.
     if (parseCommand(input, &words[0], &count) != JSON_OK)
     {
-      printf("There was an error parsing the command. Continuing\n");
+      printf("There was an error parsing the command. Continuing.\n");
       continue;
     }
 
@@ -178,6 +98,7 @@ int printHelp(void)
   printf("\t> append <child key> to <parent key>\n");
   printf("\t> modify <key> set <field> <value>\n");
   printf("\t> delete [<key>]\n");
+  printf("\t> write <filename without extension>\n");
   printf("\t> print [<key>]\n");
   printf("\t> help\n");
 
@@ -258,7 +179,7 @@ int executeCommand(char **command, int count, NODE **rootAddress)
 {
   if (strcmp(command[0], "append") == 0)
   {
-    // Strcuture: append <child key> to <parent key>.
+    // Structure: append <child key> to <parent key>.
     return jsonAppend(rootAddress, command[3], command[1]);
   }
   else if (strcmp(command[0], "modify") == 0)
@@ -271,10 +192,15 @@ int executeCommand(char **command, int count, NODE **rootAddress)
     // Structure: delete [<key>].
     return jsonDelete(rootAddress, command[1]);
   }
+  else if (strcmp(command[0], "write") == 0)
+  {
+    // Structure: write <filename>
+    return jsonPrintToFile(*rootAddress, command[1]);
+  }
   else if (strcmp(command[0], "print") == 0)
   {
     // Structure: print [<what>].
-    return jsonPrint(*rootAddress, command[1]);
+    return jsonPrintToStdin(*rootAddress, command[1]);
   }
   else if (strcmp(command[0], "help") == 0)
   {
@@ -299,7 +225,7 @@ NODE *createNode(void)
     }
   }
 
-  printf("ERROR: Could not allocate memory for the node.\n");
+  printf("ERROR: Could not create the node.\n");
   return NULL;
 }
 
@@ -332,6 +258,7 @@ int setType(NODE *node, int type)
     return JSON_ERROR;
   }
 
+  // Validate the type received.
   if (validateType(type) == JSON_ERROR)
   {
     printf("ERROR: Cannot set type. Not a valid type.\n");
@@ -399,9 +326,10 @@ int setChildNumber(NODE *node, int number)
     return JSON_ERROR;
   }
 
+  // Check the type of node is correct.
   if (node->type != JSON_OBJECT)
   {
-    printf("ERROR. Cannot change child number. Node is not object type.\n");
+    printf("ERROR. Cannot change child number. Node is not of type OBJECT.\n");
     return JSON_ERROR;
   }
 
@@ -413,7 +341,7 @@ int setChildNumber(NODE *node, int number)
 // Set the data in a node.
 int setData(NODE *node, char *data)
 {
-  // Check the node is accesible.
+  // Check that the node is accesible.
   if (node == NULL)
   {
     printf("ERROR: Cannot modify data in NULL node.\n");
@@ -465,7 +393,7 @@ int setData(NODE *node, char *data)
   }
   else if (node->type == JSON_OBJECT)
   {
-    printf("ERROR. To modify data in a node of type OBJECT, please use append.\n");
+    printf("ERROR. To modify data in a node of type OBJECT. Please use append.\n");
     return JSON_ERROR;
   }
 
@@ -491,6 +419,26 @@ int getBooleanFromString(char *data)
   }
 }
 
+// Gets a boolean type and converts it to a string
+// storing it in the buffer passed.
+int booleanTypeToString(char *buffer, BOOLEAN type)
+{
+  if (type == JSON_TRUE)
+  {
+    strcpy(buffer, "true");
+  }
+  else if (type == JSON_FALSE)
+  {
+    strcpy(buffer, "false");
+  }
+  else
+  {
+    strcpy(buffer, "<empty>");
+  }
+
+  return JSON_OK;
+}
+
 
 // Initializes the data of a node once its type is known.
 int initializeData(NODE *node)
@@ -503,12 +451,7 @@ int initializeData(NODE *node)
   }
 
   // Decide depending on the type of node.
-  if (node->type == JSON_NULL)
-  {
-    printf("ERROR: Cannot initialize data in a node of type NULL.\n");
-    return JSON_ERROR;
-  }
-  else if (node->type == JSON_STRING)
+  if (node->type == JSON_STRING)
   {
     // Create space for a string and initialize it to empty.
     node->data = malloc(STRING_LENGTH + 1);
@@ -530,7 +473,7 @@ int initializeData(NODE *node)
   }
   else if (node->type == JSON_ARRAY)
   {
-    // TODO: initialize the array.
+    // TODO: initialize an array type.
     return JSON_ERROR;
   }
   else if (node->type == JSON_OBJECT)
@@ -590,7 +533,7 @@ int jsonAppend(NODE **rootAddress, char *parentKey, char *childKey)
     printf("ERROR: Cannot append node to a node without a valid type.\n");
     return JSON_ERROR;
   }
-  else if (validateType(parent->type) == JSON_ERROR && parent->type != JSON_OBJECT)
+  else if (parent->type != JSON_OBJECT)
   {
     printf("Cannot append node to a node that is not OBJECT type.\n");
     return JSON_ERROR;
@@ -598,6 +541,11 @@ int jsonAppend(NODE **rootAddress, char *parentKey, char *childKey)
 
   // Create a new node.
   NODE *newNode = createNode();
+  if (newNode == NULL)
+  {
+    printf("Could not create a child node.\n");
+    return JSON_ERROR;
+  }
   setKey(newNode, childKey);
 
   // Link the parent to the new node.
@@ -639,10 +587,14 @@ NODE *searchByKey(NODE *node, char *key)
         }
       }
     }
+
+    // I have searched inside this object and the key was not found.
+    return NULL;
   }
   else if (node->type == JSON_ARRAY)
   {
     // TODO: implement a search inside the array.
+    // Array nodes do not have keys!!!
     return NULL;
   }
   else
@@ -822,98 +774,4 @@ int jsonFreeNode(NODE *node)
     free(node);
     return JSON_OK;
   }
-}
-
-
-// Function that handles the print command.
-int jsonPrint(NODE *root, char *what)
-{
-  // Find out the key wanted by the user.
-  char key[STRING_LENGTH + 1];
-  if (strcmp(what, "") == 0)
-  {
-    strcpy(key, "root");
-  }
-  else
-  {
-    strcpy(key, what);
-  }
-
-  // Try to find the node with the relevant key.
-  NODE *parent = searchByKey(root, key);
-  if (parent != NULL)
-  {
-    printNode(parent, 0);
-  }
-}
-
-
-// Print the selected node and childs with the given offset on screen.
-int printNode(NODE *node, int offset)
-{
-  // Print the offset.
-  printBlanks(offset);
-
-  // Print the key.
-  printf("\"%s\" : ", node->key);
-
-  if (node->type == JSON_NULL)
-  {
-    printf("<null>\n");
-  }
-  else if (node->type == JSON_STRING)
-  {
-    printf("\"%s\"\n", (char *) node->data);
-  }
-  else if (node->type == JSON_INTEGER)
-  {
-    printf("%d\n", *((int *) node->data));
-  }
-  else if (node->type == JSON_BOOLEAN)
-  {
-    if (*((int *) node->data) == JSON_TRUE)
-    {
-      printf("true\n");
-    }
-    else if (*((int *) node->data) == JSON_FALSE)
-    {
-      printf("false\n");
-    }
-    else if (*((int *) node->data) == JSON_UNKNOWN)
-    {
-      printf("\n");
-    }
-  }
-  else if (node->type == JSON_ARRAY)
-  {
-    // TODO: print an array.
-    return JSON_ERROR;
-  }
-  else if (node->type == JSON_OBJECT)
-  {
-    // Print a brace and call printNode in a loop.
-    printf("{\n");
-    int childs = ((OBJDATA *) node->data)->childNumber;
-    NODE **ptr = ((OBJDATA *) node->data)->objectPointers;
-    for (int i = 0; i < childs; i++)
-    {
-      printNode(ptr[i], offset + 1);
-    }
-    printBlanks(offset);
-    printf("}\n");
-  }
-
-  return JSON_OK;
-}
-
-
-// Prints that number of blank characters.
-int printBlanks(int number)
-{
-  for (int i = 0; i < number; i++)
-  {
-    printf("  ");
-  }
-
-  return JSON_OK;
 }
