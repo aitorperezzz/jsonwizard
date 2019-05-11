@@ -32,6 +32,7 @@ int main(int argc, char argv[])
   }
 
   // Set initial values for the root.
+  // TODO: use json modify as a level of abstraction.
   setKey(root, "root");
   setType(root, JSON_OBJECT);
 

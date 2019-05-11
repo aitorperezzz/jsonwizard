@@ -1,7 +1,6 @@
 // This module writes a JSON object, to a text file or to stdin.
 
 // Include header files.
-#include "JSONwizard.h"
 #include "print.h"
 
 // Prototypes of static functions.
@@ -177,6 +176,7 @@ static int printNode(FILE *file, NODE *node, int offset)
   // If the node is not an object, we have already finished.
   return JSON_OK;
 }
+
 
 // Writes blank spaces to a string.
 // Returns the number of characters written.
