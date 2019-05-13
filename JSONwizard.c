@@ -5,6 +5,7 @@
 
 #include "JSONwizard.h"
 #include "print.h"
+#include "load.h"
 
 // MAIN.
 int main(int argc, char argv[])
@@ -101,6 +102,7 @@ int printHelp(void)
   printf("\t> delete [<key>]\n");
   printf("\t> write <filename without extension>\n");
   printf("\t> print [<key>]\n");
+  printf("\t> load <filename>\n");
   printf("\t> help\n");
 
   return JSON_OK;
@@ -202,6 +204,23 @@ int executeCommand(char **command, int count, NODE **rootAddress)
   {
     // Structure: print [<what>].
     return jsonPrintToStdin(*rootAddress, command[1]);
+  }
+  else if (strcmp(command[0], "load") == 0)
+  {
+    // Structure: load <filename>.
+    // Free the previous structure in root.
+    jsonFreeNode(*rootAddress);
+
+    // Load the new structure in root.
+    *rootAddress = jsonLoad(command[1]);
+    if (*rootAddress == NULL)
+    {
+      return JSON_ERROR;
+    }
+    else
+    {
+      return jsonPrintToStdin(*rootAddress, "root");
+    }
   }
   else if (strcmp(command[0], "help") == 0)
   {
