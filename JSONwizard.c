@@ -81,15 +81,6 @@ int main(int argc, char argv[])
       break;
     }
   }
-
-  // Write to an external file.
-  // TODO.
-
-  // Clean the word space.
-  for (int i = 0; i < NUMBER_WORDS; i++)
-  {
-    free(words[i]);
-  }
 }
 
 
@@ -208,19 +199,11 @@ int executeCommand(char **command, int count, NODE **rootAddress)
   else if (strcmp(command[0], "load") == 0)
   {
     // Structure: load <filename>.
-    // Free the previous structure in root.
-    jsonFreeNode(*rootAddress);
-
-    // Load the new structure in root.
-    *rootAddress = jsonLoad(command[1]);
-    if (*rootAddress == NULL)
-    {
-      return JSON_ERROR;
-    }
-    else
-    {
-      return jsonPrintToStdin(*rootAddress, "root");
-    }
+    return jsonLoad(rootAddress, command[1]);
+  }
+  else if (strcmp(command[0], "quit") == 0)
+  {
+    return jsonQuit(*rootAddress, command);
   }
   else if (strcmp(command[0], "help") == 0)
   {
@@ -764,7 +747,7 @@ int jsonDelete(NODE **rootAddress, char *what)
 }
 
 
-// Receives a pointer to a node and frees it and all its childs.
+// Receives a pointer to a node and frees it recursively.
 int jsonFreeNode(NODE *node)
 {
   // Check that the node is available.
@@ -777,21 +760,45 @@ int jsonFreeNode(NODE *node)
   // Decide according to the type of node.
   if (node->type != JSON_OBJECT)
   {
+    // First delete its data.
+    if (node->data != NULL)
+    {
+      free(node->data);
+    }
+
+    // Now delete the node.
     free(node);
     return JSON_OK;
   }
   else
   {
-    // Loop through all of its children nodes.
-    int childs = ((OBJDATA *) node->data)->childNumber;
-    NODE **ptr = ((OBJDATA *) node->data)->objectPointers;
-    //NODE *ptr = ((OBJDATA *) node->data)->objectPointers[0];
-    for (int i = 0; i < childs; i++)
+    // Loop through all the childs.
+    OBJDATA *data = (OBJDATA *) node->data;
+    for (int i = 0; i < data->childNumber; i++)
     {
-      jsonFreeNode(ptr[i]);
+      jsonFreeNode(data->objectPointers[i]);
     }
 
+    // Free its data.
+    free(data);
+
+    // Free the node.
     free(node);
     return JSON_OK;
   }
+}
+
+// Quits the program.
+int jsonQuit(NODE *root, char **command)
+{
+  // Free the root structure.
+  jsonFreeNode(root);
+
+  // Free the command buffer.
+  for (int i = 0; i < NUMBER_WORDS; i++)
+  {
+    free(command[i]);
+  }
+
+  return JSON_QUIT;
 }

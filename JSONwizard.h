@@ -96,4 +96,6 @@ int initializeObjectData(OBJDATA *objData);
 int jsonDelete(NODE **, char *);
 int jsonFreeNode(NODE *);
 
+int jsonQuit(NODE *, char **);
+
 #endif

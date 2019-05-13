@@ -5,6 +5,6 @@
 #include "JSONwizard.h"
 
 // Prototypes of public functions.
-NODE *jsonLoad(char *filename);
+int jsonLoad(NODE **,  char *filename);
 
 #endif

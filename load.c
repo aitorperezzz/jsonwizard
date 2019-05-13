@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "load.h"
+#include "print.h"
 
 // Static variables.
 static int INITIAL_STRING_LENGTH = 100;
@@ -23,14 +24,23 @@ static int getSizeOfObjectValue(char *, int);
 
 // Receives a filename and returns a pointer to a JSON object if succesful.
 // If not succcessful, returns NULL.
-NODE *jsonLoad(char *filename)
+// Receives the root address and a filename, and tries to load
+// a JSON from that file.
+// If successful, loads in root and returns ok.
+// If not, returns error.
+int jsonLoad(NODE **rootAddress, char *filename)
 {
+  // First free the previous root structure.
+  jsonFreeNode(*rootAddress);
+
   // Try to open the specified file.
   FILE *file = fopen(filename, "r");
   if (file == NULL)
   {
     printf("ERROR. Could not open the specified file.\n");
-    return NULL;
+    fclose(file);
+    *rootAddress = NULL;
+    return JSON_ERROR;
   }
 
   // Try to convert it to a string.
@@ -38,23 +48,36 @@ NODE *jsonLoad(char *filename)
   if (jsonString == NULL)
   {
     printf("ERROR. Could not parse the file to a string.\n");
-    return NULL;
+    free(jsonString);
+    fclose(file);
+    *rootAddress = NULL;
+    return JSON_ERROR;
   }
 
+  // Print the string obtained.
+  printf("JSON string obtained from file %s:\n", filename);
   printf("%s\n", jsonString);
-  printf("Length of the JSON string: %ld.\n", strlen(jsonString));
 
-  // Now we have a string with the JSON content. We try to parse it.
+  // Now we have a string with the JSON content. Try to parse it.
   NODE *root = jsonParse(jsonString);
   if (root == NULL)
   {
     printf("ERROR: The JSON string could not be parsed.\n");
     free(jsonString);
-    return NULL;
+    free(root);
+    *rootAddress = NULL;
+    return JSON_ERROR;
   }
-
-  free(jsonString);
-  return root;
+  else
+  {
+    // Make it point to the original root and finish.
+    *rootAddress = root;
+    free(jsonString);
+    printf("JSON loaded to memory:\n");
+    jsonPrintToStdin(root, "root");
+    fclose(file);
+    return JSON_OK;
+  }
 }
 
 
