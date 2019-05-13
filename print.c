@@ -1,6 +1,9 @@
 // This module writes a JSON object, to a text file or to stdin.
 
 // Include header files.
+#include <stdio.h>
+#include <string.h>
+
 #include "print.h"
 
 // Defines.

@@ -2,6 +2,11 @@
 // structure and returns it.
 
 // Include header files.
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "load.h"
 
 // Static variables.
