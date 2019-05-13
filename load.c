@@ -1,7 +1,7 @@
-// This module receives a .json file, imports the information to a node
-// structure and returns it.
+// This module receives a .json file and tries to import it
+// to a node structure.
 
-// Include header files.
+// Includes.
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,24 +10,23 @@
 #include "load.h"
 #include "print.h"
 
-// Static variables.
-static int INITIAL_STRING_LENGTH = 100;
+// Defines.
+#define STRING_BLOCK_LENGTH 100
 
 // Prototypes for static functions.
-static char *fileToString(FILE *);
+static char *jsonFileToString(FILE *);
 static NODE *jsonParse(char *);
 static NODE *parseNode(char *, int);
-static int stepsToChar(char *, int, char);
+static int lengthOfString(char *, int);
 static int sizeOfNumber(char *, int);
 static int getSizeOfNextNode(char *, int);
 static int getSizeOfObjectValue(char *, int);
 
-// Receives a filename and returns a pointer to a JSON object if succesful.
-// If not succcessful, returns NULL.
-// Receives the root address and a filename, and tries to load
+
+// Receives the current root address and a filename, and tries to load
 // a JSON from that file.
-// If successful, loads in root and returns ok.
-// If not, returns error.
+// If ok, loads in root and returns ok.
+// If not ok, frees, root points to NULL and returns error.
 int jsonLoad(NODE **rootAddress, char *filename)
 {
   // First free the previous root structure.
@@ -44,11 +43,10 @@ int jsonLoad(NODE **rootAddress, char *filename)
   }
 
   // Try to convert it to a string.
-  char *jsonString = fileToString(file);
+  char *jsonString = jsonFileToString(file);
   if (jsonString == NULL)
   {
     printf("ERROR. Could not parse the file to a string.\n");
-    free(jsonString);
     fclose(file);
     *rootAddress = NULL;
     return JSON_ERROR;
@@ -59,22 +57,23 @@ int jsonLoad(NODE **rootAddress, char *filename)
   printf("%s\n", jsonString);
 
   // Now we have a string with the JSON content. Try to parse it.
-  NODE *root = jsonParse(jsonString);
-  if (root == NULL)
+  NODE *newRoot = jsonParse(jsonString);
+  if (newRoot == NULL)
   {
     printf("ERROR: The JSON string could not be parsed.\n");
+    fclose(file);
     free(jsonString);
-    free(root);
+    free(newRoot);
     *rootAddress = NULL;
     return JSON_ERROR;
   }
   else
   {
-    // Make it point to the original root and finish.
-    *rootAddress = root;
+    // Make root point to the new root and finish.
+    *rootAddress = newRoot;
     free(jsonString);
     printf("JSON loaded to memory:\n");
-    jsonPrintToStdin(root, "root");
+    jsonPrintToStdin(newRoot, "root");
     fclose(file);
     return JSON_OK;
   }
@@ -82,59 +81,69 @@ int jsonLoad(NODE **rootAddress, char *filename)
 
 
 // Receives a file pointer and parses it to a string,
-// removing spaces and newline characters.
-// Returns a pointer to the string if successful.
-// Returns NULL if not successful.
-static char *fileToString(FILE *file)
+// removing spaces and newline characters out of strings.
+// If ok, returns a pointer to the string.
+// If not ok, frees the string and returns NULL.
+static char *jsonFileToString(FILE *file)
 {
-  // Create a buffer for the string.
-  char *string = calloc(INITIAL_STRING_LENGTH, sizeof(char));
-  int length = INITIAL_STRING_LENGTH;
+  // Create a dynamic buffer for the string.
+  char *string = calloc(STRING_BLOCK_LENGTH, sizeof(char));
+  int length = STRING_BLOCK_LENGTH;
+
+  // Copy all the file to a string as it is.
   int position = 0;
-
   char character;
-  while (1)
+  while ((character = fgetc(file)) != EOF)
   {
-    character = fgetc(file);
-    if (character != EOF)
-    {
-      if (character != '\n' && character != ' ')
-      {
-        // Only in this case, copy it to the string.
-        string[position] = character;
-        position++;
-      }
-    }
+    string[position] = character;
+    position++;
 
-    // Check if we have space in the string buffer.
+    // Check if we have space.
     if (position == length)
     {
-      // Reserve more space.
-      string = realloc(string, length + INITIAL_STRING_LENGTH);
-      length = length + INITIAL_STRING_LENGTH;
+      string = realloc(string, length + STRING_BLOCK_LENGTH);
+      length = length + STRING_BLOCK_LENGTH;
       if (string == NULL)
       {
-        printf("ERROR. Could not read from file, not enough memory.\n");
+        printf("ERROR: Not enough memory to store the JSON as a string.\n");
         free(string);
         return NULL;
       }
     }
+  }
+  string[position] = '\0';
 
-    if (character == EOF)
+  // Now remove all unnecessary characters (spaces and newlines).
+  int size;
+  position = 0;
+  while (position < length)
+  {
+    if (string[position] == '\"')
     {
-      break;
+      // A new string begins. Calculate the size and jump over.
+      size = lengthOfString(&string[position + 1], length - position - 1);
+      position = position + size + 2;
+      continue;
     }
+    else if (string[position] == ' ' || string[position] == '\n')
+    {
+      // Skip these characters.
+      for (int i = position; i < length - 1; i++)
+      {
+        string[i] = string[i + 1];
+      }
+      continue;
+    }
+    position++;
   }
 
-  // Close the string and return.
-  string[position] = '\0';
   return string;
 }
 
 
 // Receives a JSON string and tries to parse it to a structure.
-// Returns a pointer to the structure if successful.
-// Returns NULL if not.
+// If ok, returns a pointer to the structure.
+// If not ok, returns NULL.
 static NODE *jsonParse(char *string)
 {
   // Add "root": to the string.
@@ -149,7 +158,7 @@ static NODE *jsonParse(char *string)
   NODE *root = parseNode(nodeString, size - 1);
   if (root == NULL)
   {
-    printf("ERROR. Could not parse the root node.\n");
+    printf("ERROR. Could not parse the JSON string.\n");
     return NULL;
   }
 
@@ -159,21 +168,16 @@ static NODE *jsonParse(char *string)
 
 // Receives a pointer to a buffer where a node is represented,
 // and the length of that node.
-// Returns a node pointer if successful.
-// Returns NULL if not.
+// If ok, returns a node pointer.
+// If not ok, frees memory and returns NULL.
 static NODE *parseNode(char *string, int length)
 {
   int position;
 
-  // The first thing in the node is the key.
-  int keyLength = stepsToChar(&string[1], length - 1, '\"');
-  if (keyLength == -1)
-  {
-    printf("ERROR: Could not find the key in the node.\n");
-    return NULL;
-  }
+  // The first thing in the node is the key. Find its length.
+  int keyLength = lengthOfString(&string[1], length - 1);
 
-  // Store the key; keyLength is the length of the key.
+  // Store the key.
   char key[STRING_LENGTH + 1];
   memcpy(key, string + 1, keyLength);
   key[keyLength] = '\0';
@@ -184,7 +188,7 @@ static NODE *parseNode(char *string, int length)
   // Create some space for the node.
   NODE *node = malloc(sizeof(NODE));
   initializeNode(node);
-  // TODO: wrap this with abstraction.
+  // TODO: wrapper to modify fields in a node.
   setKey(node, key);
 
   // Access the character in position to get the type.
@@ -194,13 +198,8 @@ static NODE *parseNode(char *string, int length)
   }
   else if (string[position] == '\"')
   {
-    // This is a string node. Find the string.
-    int valueLength = stepsToChar(&string[position + 1], length - position - 1, '\"');
-    if (valueLength == -1)
-    {
-      printf("ERROR: Could not find value in STRING node.\n");
-      return NULL;
-    }
+    // This is a string node. Get the string value.
+    int valueLength = lengthOfString(&string[position + 1], length - position - 1);
     char value[STRING_LENGTH + 1];
     memcpy(value, &string[position + 1], valueLength);
     value[valueLength] = '\0';
@@ -211,7 +210,7 @@ static NODE *parseNode(char *string, int length)
   }
   else if (isdigit(string[position]))
   {
-    // This is an integer node. First get the value of the int.
+    // This is an integer node. Get the length of the number.
     int numberLength = sizeOfNumber(&string[position], length - position);
     char numberString[STRING_LENGTH + 1];
     memcpy(numberString, &string[position], numberLength);
@@ -238,11 +237,13 @@ static NODE *parseNode(char *string, int length)
   else if (string[position] == '[')
   {
     // This is an array node.
+    printf("ERROR: The program does not support array nodes.\n");
+    free(node);
     return NULL;
   }
   else if (string[position] == '{')
   {
-    // This is an object node. Set it as an object node.
+    // This is an object node. Set the type.
     setType(node, JSON_OBJECT);
     int pointer = position + 1;
 
@@ -261,6 +262,7 @@ static NODE *parseNode(char *string, int length)
         {
           printf("ERROR: Could not create node beginning at position %d.\n", pointer);
           printf("ERROR: String received by parseNode: %s.\n", &string[pointer]);
+          free(node);
           return NULL;
         }
 
@@ -277,31 +279,45 @@ static NODE *parseNode(char *string, int length)
   else
   {
     // Error parsing the node.
+    printf("ERROR. Value in node could not be recognised.\n");
+    printf("ERROR: string received by parseNode: %s.\n", string);
+    free(node);
     return NULL;
   }
 
-  // The node has been parsed, so return it.
+  // The node has been parsed correctly, so return it.
   return node;
 }
 
-// Receives a pointer to a buffer of chars and the length of the buffer.
-// Receives a char and returns the number of chars until that char is found.
-static int stepsToChar(char *string, int length, char c)
+
+// Receives a buffer and its length and tries to find the length of the string.
+// The buffer begins with the first character in the string.
+// Returns the length of the string, without the "" characters.
+static int lengthOfString(char *buffer, int length)
 {
   int position = 0;
-  while (position < length && string[position] != c)
-  {
-    position++;
-  }
 
-  if (position == length)
+  while (position < length)
   {
-    // It could not be found.
-    return -1;
+    if (buffer[position] == '\"')
+    {
+      if (buffer[position - 1] != '\\')
+      {
+        // The string is being closed.
+        return position;
+      }
+      else if (buffer[position - 2] == '\\')
+      {
+        // Also closed.
+        return position;
+      }
+    }
+    position++;
   }
 
   return position;
 }
+
 
 // Receives a pointer to a buffer of chars and returns how long an int is.
 static int sizeOfNumber(char *string, int length)
@@ -320,34 +336,46 @@ static int sizeOfNumber(char *string, int length)
 // Returns -1 if anything went wrong.
 static int getSizeOfNextNode(char *string, int length)
 {
-  // Find the length of the next key.
-  int valuePosition = stepsToChar(string, length, ':') + 1;
-  int size;
+  // Find the length of the key.
+  int keyLength = lengthOfString(&string[1], length - 1);
+  int position = keyLength + 3;
 
-  if (valuePosition >= length)
+  // ?????
+  if (position == length)
   {
     return -1;
   }
 
-  // Check the next character.
-  if (string[valuePosition] == '{')
+  // Calculate the size of the value.
+  int size;
+  if (string[position] == '{')
   {
-    size = getSizeOfObjectValue(&string[valuePosition], length - valuePosition);
+    size = getSizeOfObjectValue(&string[position], length - position);
+  }
+  else if (string[position] == '\"')
+  {
+    size = lengthOfString(&string[position + 1], length - position - 1) + 2;
+
+  }
+  else if (string[position] == '[')
+  {
+    printf("ERROR: cannot calculate size of array node.\n");
+    return -1;
   }
   else
   {
-    // Just look for the next comma or for the end of the buffer.
-    int position = valuePosition;
-    while (position < length && string[position] != ',' && string[position] != '}')
+    // Find the next comma or the end of the buffer.
+    int counter = position;
+    while (counter < length && string[counter] != ',')
     {
-      position++;
+      counter++;
     }
-    size = position - valuePosition;
-    //size = stepsToChar(&string[steps + 1], length - steps - 1, ',');
+
+    size = counter - position;
   }
 
   // Add the : char and the , char and you get the size of the node.
-  return valuePosition + size;
+  return position + size;
 }
 
 // Receives a pointer to a buffer of chars and returns the size of the object

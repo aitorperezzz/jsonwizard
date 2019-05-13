@@ -1,17 +1,17 @@
 // This module writes a JSON object, to a text file or to stdin.
 
-// Include header files.
+// Includes.
 #include <stdio.h>
 #include <string.h>
 
 #include "print.h"
 
-// Defines.
-typedef enum lastNode_enum
+// Enum.
+enum
 {
   LAST_YES,
   LAST_NO
-} LASTNODE;
+};
 
 // Prototypes of static functions.
 static int printNode(FILE *, NODE *, int, int);
