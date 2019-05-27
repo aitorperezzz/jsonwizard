@@ -1,5 +1,5 @@
 // This module receives a .json file and tries to import it
-// to a node structure.
+// to a node_t structure.
 
 // Includes.
 #include <ctype.h>
@@ -8,15 +8,17 @@
 #include <string.h>
 
 #include "load.h"
+#include "set.h"
 #include "print.h"
+#include "free.h"
 
 // Defines.
 #define STRING_BLOCK_LENGTH 100
 
 // Prototypes for static functions.
 static char *jsonFileToString(FILE *);
-static NODE *jsonParse(char *);
-static NODE *parseNode(char *, int);
+static node_t *jsonParse(char *);
+static node_t *parseNode(char *, int);
 static int lengthOfString(char *, int);
 static int sizeOfNumber(char *, int);
 static int getSizeOfNextNode(char *, int);
@@ -27,10 +29,10 @@ static int getSizeOfObjectValue(char *, int);
 // a JSON from that file.
 // If ok, loads in root and returns ok.
 // If not ok, frees, root points to NULL and returns error.
-int jsonLoad(NODE **rootAddress, char *filename)
+int jsonLoad(node_t **rootAddress, char *filename)
 {
   // First free the previous root structure.
-  jsonFreeNode(*rootAddress);
+  jsonDelete(rootAddress, "root");
 
   // Try to open the specified file.
   FILE *file = fopen(filename, "r");
@@ -57,7 +59,7 @@ int jsonLoad(NODE **rootAddress, char *filename)
   printf("%s\n", jsonString);
 
   // Now we have a string with the JSON content. Try to parse it.
-  NODE *newRoot = jsonParse(jsonString);
+  node_t *newRoot = jsonParse(jsonString);
   if (newRoot == NULL)
   {
     printf("ERROR: The JSON string could not be parsed.\n");
@@ -144,18 +146,18 @@ static char *jsonFileToString(FILE *file)
 // Receives a JSON string and tries to parse it to a structure.
 // If ok, returns a pointer to the structure.
 // If not ok, returns NULL.
-static NODE *jsonParse(char *string)
+static node_t *jsonParse(char *string)
 {
   // Add "root": to the string.
   char *rootString = "\"root\":";
   int size = strlen(rootString) + strlen(string) + 1;
-  char nodeString[size];
-  memcpy(nodeString, rootString, strlen(rootString));
-  memcpy(&nodeString[strlen(rootString)], string, strlen(string));
-  nodeString[size - 1] = '\0';
+  char node_tString[size];
+  memcpy(node_tString, rootString, strlen(rootString));
+  memcpy(&node_tString[strlen(rootString)], string, strlen(string));
+  node_tString[size - 1] = '\0';
 
   // Parse the root node.
-  NODE *root = parseNode(nodeString, size - 1);
+  node_t *root = parseNode(node_tString, size - 1);
   if (root == NULL)
   {
     printf("ERROR. Could not parse the JSON string.\n");
@@ -170,11 +172,11 @@ static NODE *jsonParse(char *string)
 // and the length of that node.
 // If ok, returns a node pointer.
 // If not ok, frees memory and returns NULL.
-static NODE *parseNode(char *string, int length)
+static node_t *parseNode(char *string, int length)
 {
   int position;
 
-  // The first thing in the node is the key. Find its length.
+  // The first thing in the node_t is the key. Find its length.
   int keyLength = lengthOfString(&string[1], length - 1);
 
   // Store the key.
@@ -186,9 +188,8 @@ static NODE *parseNode(char *string, int length)
   position = keyLength + 3;
 
   // Create some space for the node.
-  NODE *node = malloc(sizeof(NODE));
+  node_t *node = malloc(sizeof(node));
   initializeNode(node);
-  // TODO: wrapper to modify fields in a node.
   setKey(node, key);
 
   // Access the character in position to get the type.
@@ -198,32 +199,32 @@ static NODE *parseNode(char *string, int length)
   }
   else if (string[position] == '\"')
   {
-    // This is a string node. Get the string value.
+    // This is a string node_t. Get the string value.
     int valueLength = lengthOfString(&string[position + 1], length - position - 1);
     char value[STRING_LENGTH + 1];
     memcpy(value, &string[position + 1], valueLength);
     value[valueLength] = '\0';
 
     // Update node information.
-    setType(node, JSON_STRING);
+    setType(node, TYPE_STRING);
     setData(node, value);
   }
   else if (isdigit(string[position]))
   {
-    // This is an integer node. Get the length of the number.
+    // This is an integer node_t. Get the length of the number.
     int numberLength = sizeOfNumber(&string[position], length - position);
     char numberString[STRING_LENGTH + 1];
     memcpy(numberString, &string[position], numberLength);
     numberString[numberLength] = '\0';
 
-    // Update the information of the node.
-    setType(node, JSON_INTEGER);
+    // Update node information.
+    setType(node, TYPE_INTEGER);
     setData(node, numberString);
   }
   else if (string[position] == 't' || string[position] == 'f')
   {
     // This is a boolean node.
-    setType(node, JSON_BOOLEAN);
+    setType(node, TYPE_BOOLEAN);
 
     if (string[position] == 't')
     {
@@ -237,19 +238,19 @@ static NODE *parseNode(char *string, int length)
   else if (string[position] == '[')
   {
     // This is an array node.
-    printf("ERROR: The program does not support array nodes.\n");
+    printf("ERROR: the program does not support array nodes.\n");
     free(node);
     return NULL;
   }
   else if (string[position] == '{')
   {
     // This is an object node. Set the type.
-    setType(node, JSON_OBJECT);
+    setType(node, TYPE_OBJECT);
     int pointer = position + 1;
 
     // Parse the object childs looking for nodes.
-    OBJDATA *data = (OBJDATA *) node->data;
-    NODE *newNode;
+    objData_t *data = (objData_t *) node->data;
+    node_t *newNode;
     int size;
     while (pointer < length)
     {
@@ -260,16 +261,16 @@ static NODE *parseNode(char *string, int length)
         newNode = parseNode(&string[pointer], size);
         if (newNode == NULL)
         {
-          printf("ERROR: Could not create node beginning at position %d.\n", pointer);
-          printf("ERROR: String received by parseNode: %s.\n", &string[pointer]);
+          printf("ERROR: could not create node beginning at position %d.\n", pointer);
+          printf("ERROR: string received by parseNode: %s.\n", &string[pointer]);
           free(node);
           return NULL;
         }
 
         // Add the new node to the child array.
         newNode->parent = node;
-        data->objectPointers[data->childNumber] = newNode;
-        data->childNumber++;
+        data->objects[data->childNumber] = newNode;
+        setChildNumber(node, data->childNumber++);
 
         // Prepare for the next node.
         pointer = pointer + size + 1;
@@ -279,7 +280,7 @@ static NODE *parseNode(char *string, int length)
   else
   {
     // Error parsing the node.
-    printf("ERROR. Value in node could not be recognised.\n");
+    printf("ERROR. value in node could not be recognised.\n");
     printf("ERROR: string received by parseNode: %s.\n", string);
     free(node);
     return NULL;
@@ -332,7 +333,7 @@ static int sizeOfNumber(char *string, int length)
 }
 
 // Receives a buffer of chars and returns the number of characters read until
-// the end of the next complete node.
+// the end of the next complete node_t.
 // Returns -1 if anything went wrong.
 static int getSizeOfNextNode(char *string, int length)
 {
@@ -374,7 +375,7 @@ static int getSizeOfNextNode(char *string, int length)
     size = counter - position;
   }
 
-  // Add the : char and the , char and you get the size of the node.
+  // Add the : char and the , char and you get the size of the node_t.
   return position + size;
 }
 

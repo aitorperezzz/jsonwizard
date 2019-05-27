@@ -2,9 +2,9 @@
 #define LOAD_H
 
 // Includes.
-#include "JSONwizard.h"
+#include "wizard.h"
 
 // Prototypes of public functions.
-int jsonLoad(NODE **,  char *filename);
+int jsonLoad(node_t **,  char *);
 
 #endif
