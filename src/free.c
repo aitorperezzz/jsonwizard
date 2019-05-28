@@ -5,9 +5,6 @@
 #include "free.h"
 #include "set.h"
 
-// Prototypes of static functions.
-static int freeNode(node_t *);
-
 // Implementation of public functions.
 
 // Deletes the optionally selected node from the tree.
@@ -51,14 +48,12 @@ int jsonDelete(node_t **rootAddress, char *what)
     {
       // The user wants to delete the root tree.
       freeNode(*rootAddress);
-      *rootAddress = createnode();
-      setKey(*rootAddress, "root");
-      setType(*rootAddress, TYPE_OBJECT);
+      *rootAddress = createRoot();
       return JSON_OK;
     }
     else
     {
-      printf("ERROR: Cannot delete node. Parent was not found.\n");
+      printf("ERROR: cannot delete node. Parent was not found.\n");
       return JSON_ERROR;
     }
   }
@@ -146,7 +141,6 @@ int freeData(node_t *node)
 
       // Free the object data structure itself.
       free(data);
-      data = NULL;
       return JSON_OK;
     case TYPE_ARRAY:
       // TODO: free the data of an array node.
@@ -157,10 +151,8 @@ int freeData(node_t *node)
 }
 
 
-// Implementation of private functions.
-
 // Receives a pointer to a node and frees it recursively.
-static int freeNode(node_t *node)
+int freeNode(node_t *node)
 {
   // Check that the node is available.
   if (node == NULL)

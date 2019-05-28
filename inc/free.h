@@ -8,5 +8,6 @@
 int jsonDelete(node_t **, char *);
 int jsonQuit(node_t *, char **);
 int freeData(node_t *);
+int freeNode(node_t *node);
 
 #endif

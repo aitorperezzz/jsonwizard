@@ -28,15 +28,11 @@ int main(int argc, char **argv)
   }
 
   // Create the root node of the tree.
-  node_t *root = createnode();
+  node_t *root = createRoot();
   if (root == NULL)
   {
     return -1;
   }
-
-  // Set initial values for the root.
-  setKey(root, "root");
-  setType(root, TYPE_OBJECT);
 
   // Store the result of every operation.
   int result;
@@ -203,7 +199,7 @@ int executeCommand(char **command, int count, node_t **rootAddress)
 }
 
 // Tries to create a node and returns a pointer to that node.
-node_t *createnode(void)
+node_t *createNode(void)
 {
   // Try to create space for a new node.
   node_t *node = malloc(sizeof(node_t));
@@ -220,6 +216,21 @@ node_t *createnode(void)
   }
 
   return NULL;
+}
+
+// Tries to create a root node.
+node_t *createRoot(void)
+{
+  node_t *root = createNode();
+  if (root == NULL)
+  {
+    printf("ERROR: could not create the root node.\n");
+    return NULL;
+  }
+
+  setKey(root, "root");
+  setType(root, TYPE_OBJECT);
+  return root;
 }
 
 
@@ -386,7 +397,7 @@ int jsonAppend(node_t **rootAddress, char *parentKey, char *childKey)
   // TODO: prevent from appending when the key is already found.
 
   // Only in this case create a new node.
-  node_t *newNode = createnode();
+  node_t *newNode = createNode();
   if (newNode == NULL)
   {
     printf("ERROR: could not create a child node.\n");

@@ -73,7 +73,8 @@ int parseCommand(char *, char **, int *);
 int executeCommand(char **, int, node_t **);
 
 // Creation of nodes.
-node_t *createnode(void);
+node_t *createNode(void);
+node_t *createRoot(void);
 int initializeNode(node_t *);
 
 // Validation and manipulation of basic types.
