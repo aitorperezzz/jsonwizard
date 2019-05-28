@@ -18,7 +18,7 @@ TARGET = wizard
 
 # Build target executable:
 all:
-	$(CC) -o $(TARGET) $(SRC) $(INC)
+	$(CC) -o $(TARGET) $(SRC) $(INC) $(CFLAGS)
 	mv $(TARGET) bin/
 
 # Clean the directory where the binary is stored.
