@@ -1,4 +1,4 @@
-# JSONwizard
+# jsonwizard
 Simple command line interface to manipulate JSON objects in C.
 
 This is a command line program, written in C, which can help the programmer create, manipulate, load from file, write to file, interactively, objects in JSON notation. The program starts a Read-Eval-Print-Loop with several commands supported.
