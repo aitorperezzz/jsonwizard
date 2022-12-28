@@ -1,33 +1,28 @@
-# The compiler.
-CC = gcc
+# Compiler
+CC=gcc
 
-# Compiler flags:
-CFLAGS = -g -Wall
+# Compiler flags
+CFLAGS=-g -Wall -Werror -std=c11
 
-# Folders to find the include files.
-INC = -Iinc
+# List sources, objects and dependencies
+SOURCES=$(wildcard src/*.c)
+OBJECTS=$(patsubst %.c,%.o,$(SOURCES))
+DEPENDS=$(patsubst %.c,%.d,$(SOURCES))
 
-# Folder where the output of the compilation will be.
-OUT = bin
+# Name of the executable
+TARGET=jsonwizard
 
-# Source files used.
-SRC = src/wizard.c src/set.c src/print.c src/load.c src/free.c
+.phony: all clean
 
-# Name for the program.
-TARGET = wizard
+all: $(TARGET)
 
-# Phony targets, not files.
-.phony: clean directories
+$(TARGET): $(OBJECTS)
+	$(CC) $(CFLAGS) $(OBJECTS) -o $(TARGET)
 
-# Build target executable:
-all: directories
-	$(CC) -o $(TARGET) $(SRC) $(INC) $(CFLAGS)
-	mv $(TARGET) $(OUT)
+-include $(DEPENDS)
 
-# Clean the directory where the program is stored.
+%.o: %.c Makefile
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+
 clean:
-	-rm $(OUT)/wizard
-
-# Create the bin directory if it does not exist already.
-directories:
-	mkdir -p ${OUT}
+	rm -f $(OBJECTS) $(TARGET) $(DEPENDS)
