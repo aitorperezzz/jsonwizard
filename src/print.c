@@ -1,208 +1,166 @@
-// This module writes a JSON object, to a text file or to stdin.
-
-// Includes.
-#include <stdio.h>
-#include <string.h>
-
 #include "print.h"
 
-// Enum.
-typedef enum
-{
-  LAST_YES,
-  LAST_NO
-} last_t;
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
 
-// Prototypes of static functions.
-static int printNode(FILE *, node_t *, int, int);
-static int printBlanks(char *, int);
-static int numberOfDigits(int);
+#include "wizard.h"
+#include "set.h"
+
+static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isLast);
+static ResultCode addBlanks(String *string, size_t number);
 
 // Receives the root of a JSON object and a name for the file.
-int jsonPrintToFile(node_t *root, char *filename)
+ResultCode printToFile(const Node *root, const String *filename)
 {
-  // Concatenate .json to the name of the file.
-  char name[STRING_LENGTH + 1];
-  memcpy(name, filename, strlen(filename));
-  strcpy(&name[strlen(filename)], ".json");
+    // Concatenate .json to the name of the file.
+    String *name = stringJoin(filename, stringCreateFromLiteral(".json"));
 
-  // Open the file in write mode.
-  FILE *file = fopen(name, "w");
-  if (file == NULL)
-  {
-    printf("ERROR: Could not open a file to write to.\n");
-    return JSON_ERROR;
-  }
+    // Open the file in write mode.
+    FILE *file = fopen(stringBuffer(name), "w");
+    if (file == NULL)
+    {
+        printf("ERROR: Could not open a file to write to.\n");
+        return JSON_ERROR;
+    }
 
-  // Print the root node_t to the file.
-  printNode(file, root, 0, LAST_YES);
+    // Print the root struct Node to the file.
+    printNode(file, root, 0, 1);
 
-  // Close the file.
-  fclose(file);
-  return JSON_OK;
+    // Close the file.
+    fclose(file);
+    return JSON_OK;
 }
 
 // Receives a pointer to the whole JSON and a key, and
 // prints to stdin.
-int jsonPrintToStdin(node_t *root, char *key)
+ResultCode printToStdin(Node *root, const String *key)
 {
-  if (root == NULL)
-  {
-    printf("ERROR: Cannot print to stdin. Root is NULL.\n");
-    return JSON_ERROR;
-  }
-
-  if (strcmp(key, "") == 0)
-  {
-    // The user wants to print the root to stdin.
-    return printNode(NULL, root, 0, LAST_YES);
-  }
-  else
-  {
-    // Look for the node.
-    node_t *parent = searchByKey(root, key);
-    if (parent == NULL)
+    if (root == NULL)
     {
-      printf("ERROR. Cannot print to stdin. Key %s was not found.\n", key);
-      return JSON_ERROR;
+        printf("ERROR: Cannot print to stdin. Root is NULL.\n");
+        return JSON_ERROR;
     }
 
-    return printNode(NULL, parent, 0, LAST_YES);
-  }
-}
+    if (stringCompare(key, stringCreateFromLiteral("")) == 0)
+    {
+        // The user wants to print the root to stdin.
+        return printNode(NULL, root, 0, 1);
+    }
+    else
+    {
+        // Look for the node.
+        Node *parent = searchByKey(root, key);
+        if (parent == NULL)
+        {
+            printf("ERROR. Cannot print to stdin. Key %s was not found.\n", stringBuffer(key));
+            return JSON_ERROR;
+        }
 
+        return printNode(NULL, parent, 0, 1);
+    }
+}
 
 // Prints a single node (recursive function).
 // If file != NULL, print to file.
 // If file == NULL, print to stdin.
-static int printNode(FILE *file, node_t *node, int offset, int last)
+static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isLast)
 {
-  // Create a buffer for the line to be written.
-  int bufferSize = (STRING_LENGTH + 1) * 2 + 4 + offset * 2;
-  char buffer[bufferSize];
-  memset(buffer, '\0', bufferSize);
-  int position = 0;
-
-  // Write the offset to the buffer.
-  position = printBlanks(buffer, offset);
-
-  // Write the key to the buffer if the node is not root.
-  if (strcmp(node->key, "root") != 0)
-  {
-    sprintf(&buffer[position], "\"%s\": ", node->key);
-
-    // Update the position to write the value of the node.
-    position = position + strlen(node->key) + 4;
-  }
-
-  // Decide according to type.
-  if (node->type == TYPE_NULL)
-  {
-    sprintf(&buffer[position], "null");
-    position = position + 4;
-  }
-  else if (node->type == TYPE_STRING)
-  {
-    sprintf(&buffer[position], "\"%s\"", (char *) node->data);
-    position = position + strlen((char *) node->data);
-  }
-  else if (node->type == TYPE_INTEGER)
-  {
-    int number = *((int *) node->data);
-    sprintf(&buffer[position], "%d", number);
-    position = position + numberOfDigits(number);
-  }
-  else if (node->type == TYPE_BOOLEAN)
-  {
-    char boolean[STRING_LENGTH + 1];
-    booleanCodeToString(*((int *) node->data), boolean);
-    sprintf(&buffer[position], "%s", boolean);
-    position = position + strlen(boolean);
-  }
-  else if (node->type == TYPE_ARRAY)
-  {
-    // TODO: print an array.
-  }
-  else if (node->type == TYPE_OBJECT)
-  {
-    sprintf(&buffer[position], "{\n");
+    // Check inputs
     if (file == NULL)
     {
-      printf("%s", buffer);
+        printf("ERROR: file pointer provided is NULL");
+        return JSON_MEMORY_ERROR;
+    }
+    if (node == NULL)
+    {
+        printf("ERROR: node provided is NULL");
+        return JSON_MEMORY_ERROR;
+    }
+
+    // Create a buffer for the line to be written.
+    String *buffer = stringCreate();
+
+    // Write the offset to the buffer.
+    addBlanks(buffer, offset);
+
+    // Write the key to the buffer if the node is not root.
+    if (stringCompare(node->key, stringCreateFromLiteral("root")) != 0)
+    {
+        stringCopy(buffer, stringCreateFromLiteral("\""));
+        stringCopy(buffer, node->key);
+        stringCopy(buffer, stringCreateFromLiteral("\": "));
+    }
+
+    // Decide according to type.
+    if (node->type == NODE_TYPE_NULL)
+    {
+        stringCopy(buffer, stringCreateFromLiteral("null"));
+    }
+    else if (node->type == NODE_TYPE_STRING)
+    {
+        stringCopy(buffer, stringCreateFromLiteral("\""));
+        stringCopy(buffer, (String *)node->data);
+        stringCopy(buffer, stringCreateFromLiteral("\""));
+    }
+    else if (node->type == NODE_TYPE_INTEGER)
+    {
+        int number = *((int *)node->data);
+        char numberBuffer[sizeof(char) * (int)log10(number)];
+        sprintf(numberBuffer, "%d", number);
+        stringCopyFromBuffer(buffer, numberBuffer, strlen(numberBuffer));
+    }
+    else if (node->type == NODE_TYPE_BOOLEAN)
+    {
+        String *booleanString = booleanCodeToString(*((Boolean *)node->data));
+        stringCopy(buffer, booleanString);
+    }
+    else if (node->type == NODE_TYPE_ARRAY)
+    {
+        // TODO
+    }
+    else if (node->type == NODE_TYPE_OBJECT)
+    {
+        // Open the object and write the current buffer contents as this is a
+        // recursive function
+        stringCopy(buffer, stringCreateFromLiteral("{\n"));
+        fprintf(file, "%s", stringBuffer(buffer));
+
+        // Call this function recursively on its childs.
+        Vector *children = (Vector *)node->data;
+        int newLast;
+        const size_t size = vectorSize(children);
+        for (size_t i = 0; i < size; i++)
+        {
+            newLast = i == size - 1 ? 1 : 0;
+            printNode(file, vectorGet(children, i), offset + 1, newLast);
+        }
+
+        // Write the last line that all object nodes finish with
+        stringFree(buffer);
+        addBlanks(buffer, offset);
+        stringCopy(buffer, stringCreateFromLiteral("}"));
     }
     else
     {
-      fprintf(file, "%s", buffer);
+        return JSON_ERROR;
     }
 
-    // Call this function recursively on its childs.
-    objData_t *data = (objData_t *) node->data;
-    int newLast;
-    for (int i = 0; i < data->childNumber; i++)
+    // Print the buffer contents
+    if (!isLast)
     {
-      newLast = i == data->childNumber - 1 ? LAST_YES : LAST_NO;
-      printNode(file, data->objects[i], offset + 1, newLast);
+        stringCopy(buffer, stringCreateFromLiteral(","));
     }
-
-    // Write in buffer the last line of an object node_t.
-    memset(buffer, '\0', bufferSize);
-    position = printBlanks(buffer, offset);
-    strcpy(&buffer[position], "}");
-    position++;
-  }
-  else
-  {
-    return JSON_ERROR;
-  }
-
-  // Print the buffer as it is right now.
-  if (file == NULL)
-  {
-    // Print it to stdin.
-    if (last == LAST_YES)
-    {
-      printf("%s\n", buffer);
-    }
-    else
-    {
-      printf("%s,\n", buffer);
-    }
-  }
-  else
-  {
-    // Print it to the file.
-    if (last == LAST_YES)
-    {
-      fprintf(file, "%s\n", buffer);
-    }
-    else
-    {
-      fprintf(file, "%s,\n", buffer);
-    }
-  }
-
-  return JSON_OK;
+    fprintf(file, "%s\n", stringBuffer(buffer));
+    return JSON_OK;
 }
-
 
 // Writes blank spaces to a string.
 // Returns the number of characters written.
-static int printBlanks(char *string, int number)
+static ResultCode addBlanks(String *string, size_t number)
 {
-  memset(string, ' ', 2 * number);
-  return 2 * number;
-}
-
-
-// Receives an integer and returns the number of digits it has.
-static int numberOfDigits(int n)
-{
-  int result = 1;
-  while (n > 9)
-  {
-    n = n / 10;
-    result++;
-  }
-
-  return result;
+    char blanks[2 * number];
+    memset(blanks, ' ', 2 * number);
+    stringCopyFromBuffer(string, blanks, 2 * number);
+    return JSON_OK;
 }

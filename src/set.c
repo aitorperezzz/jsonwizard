@@ -1,4 +1,5 @@
 // This module modifies fields inside a node.
+#include "set.h"
 
 // Includes.
 #include <ctype.h>
@@ -6,270 +7,322 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "set.h"
 #include "free.h"
 
 // Prototypes of static functions.
-static int validateInteger(char *);
-static int initializeData(node_t *);
-static int initializeObjectData(objData_t *);
-
+static int isInteger(const String *string);
+static ResultCode initializeData(Node *node);
 
 // Implementation of public functions.
 
 // This function modifies the node indicated by its key.
-int jsonModify(node_t *root, char *key, char *field, char *value)
+ResultCode jsonModify(Node *root, const String *key, const String *field, const String *value)
 {
-  // Check root is available.
-  if (root == NULL)
-  {
-    printf("ERROR: cannot modify node if root is NULL.\n");
-    return JSON_ERROR;
-  }
+    // Check root is available.
+    if (root == NULL)
+    {
+        printf("ERROR: cannot modify node if root is NULL.\n");
+        return JSON_ERROR;
+    }
 
-  // Try to find the relevant node.
-  node_t *node = searchByKey(root, key);
-  if (node == NULL)
-  {
-    printf("ERROR: cannot modify node. Key %s was not found.\n", key);
-    return JSON_ERROR;
-  }
+    // Try to find the relevant node.
+    Node *node = searchByKey(root, key);
+    if (node == NULL)
+    {
+        printf("ERROR: cannot modify node. Key %s was not found.\n", stringBuffer(key));
+        return JSON_ERROR;
+    }
 
-  // Decide based on the field.
-  if (strcmp(field, "type") == 0)
-  {
-    return setType(node, typeStringToCode(value));
-  }
-  else if (strcmp(field, "key") == 0)
-  {
-    return setKey(node, value);
-  }
-  else if (strcmp(field, "data") == 0)
-  {
-    return setData(node, value);
-  }
-  else
-  {
-    printf("ERROR: cannot modify node. '%s' is not a valid field.\n", field);
-    return JSON_ERROR;
-  }
+    // Decide based on the field.
+    if (stringCompare(field, stringCreateFromLiteral("type")) == 0)
+    {
+        return setType(node, typeStringToCode(value));
+    }
+    else if (stringCompare(field, stringCreateFromLiteral("key")) == 0)
+    {
+        return setKey(node, value);
+    }
+    else if (stringCompare(field, stringCreateFromLiteral("data")) == 0)
+    {
+        return setData(node, value);
+    }
+    else
+    {
+        printf("ERROR: cannot modify node. '%s' is not a valid field.\n", stringBuffer(field));
+        return JSON_ERROR;
+    }
 }
-
 
 // Tries to change the type of a node.
-int setType(node_t *node, int type)
+ResultCode setType(Node *node, NodeType type)
 {
-  // Check the node is available.
-  if (node == NULL)
-  {
-    printf("ERROR: cannot set type in NULL node.\n");
-    return JSON_ERROR;
-  }
+    // Check the node is available.
+    if (node == NULL)
+    {
+        printf("ERROR: cannot set type in NULL node.\n");
+        return JSON_ERROR;
+    }
 
-  // Validate the type provided.
-  if (validateType(type) == JSON_ERROR)
-  {
-    printf("ERROR: cannot change type of node. Type is not valid.\n");
-    return JSON_ERROR;
-  }
+    // Validate the type provided.
+    if (!validateType(type))
+    {
+        printf("ERROR: cannot change type of node. Type is not valid.\n");
+        return JSON_ERROR;
+    }
 
-  // First free the data of the node.
-  freeData(node);
+    // First free the data of the node.
+    freeData(node);
 
-  // Set the new type and initialize.
-  node->type = type;
-  return initializeData(node);
+    // Set the new type and initialize.
+    node->type = type;
+    return initializeData(node);
 }
-
 
 // Receives a key and sets it for the node.
-int setKey(node_t *node, char *key)
+ResultCode setKey(Node *node, const String *key)
 {
-  // Check the node is available.
-  if (node == NULL)
-  {
-    printf("ERROR: cannot set key in NULL node.\n");
-    return JSON_ERROR;
-  }
+    // Check the node is available.
+    if (node == NULL)
+    {
+        printf("ERROR: cannot set key in NULL node.\n");
+        return JSON_ERROR;
+    }
 
-  // Check a key was provided.
-  if (key == NULL)
-  {
-    printf("ERROR: cannot set key in node. No key was provided.\n");
-    return JSON_ERROR;
-  }
+    // Check a key was provided.
+    if (key == NULL)
+    {
+        printf("ERROR: cannot set key in node. No key was provided.\n");
+        return JSON_ERROR;
+    }
 
-  // TODO: check the key is not already in use.
+    // TODO: check the key is not already in use.
 
-  strcpy(node->key, key);
-  return JSON_OK;
+    stringCopy(node->key, key);
+    return JSON_OK;
 }
-
 
 // Receives data for a node as a string.
 // Only available for certain types of nodes.
-int setData(node_t *node, char *data)
+ResultCode setData(Node *node, const String *value)
 {
-  // Check the node is available.
-  if (node == NULL)
-  {
-    printf("ERROR: cannot set data in NULL node.\n");
-    return JSON_ERROR;
-  }
-
-  // Check that data was provided.
-  if (data == NULL)
-  {
-    printf("ERROR: cannot set data in node. No data was provided.\n");
-    return JSON_ERROR;
-  }
-
-  // Check the node is of the correct type.
-  switch (node->type)
-  {
-    case TYPE_NULL:
-      printf("ERROR: cannot set data in a node of type NULL.\n");
-      printf("Change its type first.\n");
-      return JSON_ERROR;
-    case TYPE_OBJECT:
-    case TYPE_ARRAY:
-      printf("ERROR: cannot modify data inside ARRAY and OBJECT nodes with setData.\n");
-      return JSON_ERROR;
-    case TYPE_STRING:
-      strcpy((char *) node->data, data);
-      return JSON_OK;
-    case TYPE_INTEGER:
-      if (validateInteger(data) == JSON_ERROR)
-      {
-        printf("ERROR: cannot set data. Not a valid integer value.\n");
+    // Check the node is available.
+    if (node == NULL)
+    {
+        printf("ERROR: cannot set data in NULL node.\n");
         return JSON_ERROR;
-      }
-      *((int *) node->data) = atoi(data);
-      return JSON_OK;
-    case TYPE_BOOLEAN:
-      if (strcmp(data, "true") == 0 || strcmp(data, "false") == 0)
-      {
-        int boolean = booleanStringToCode(data);
-        *((boolean_t *) node->data) = boolean;
+    }
+
+    // Check that data was provided.
+    if (value == NULL)
+    {
+        printf("ERROR: cannot set data in node. No data was provided.\n");
+        return JSON_ERROR;
+    }
+
+    // Check the node is of the correct type.
+    switch (node->type)
+    {
+    case NODE_TYPE_NULL:
+        printf("ERROR: cannot set data in a node of type NULL.\n");
+        printf("Change its type first.\n");
+        return JSON_ERROR;
+    case NODE_TYPE_OBJECT:
+    case NODE_TYPE_ARRAY:
+        printf("ERROR: cannot modify data inside ARRAY and OBJECT nodes with setData.\n");
+        return JSON_ERROR;
+    case NODE_TYPE_STRING:
+        node->data = stringCreate();
+        stringCopy((String *)node->data, value);
         return JSON_OK;
-      }
-      else
-      {
-        printf("ERROR: cannot set data. '%s' is not a valid boolean value.\n", data);
-        return JSON_ERROR;
-      }
+    case NODE_TYPE_INTEGER:
+        if (!isInteger(value))
+        {
+            printf("ERROR: cannot set data. Not a valid integer value.\n");
+            return JSON_ERROR;
+        }
+        *((int *)node->data) = atoi(stringBuffer(value));
+        return JSON_OK;
+    case NODE_TYPE_BOOLEAN:;
+        Boolean boolean = booleanStringToCode(value);
+        if (boolean == BOOL_UNKNOWN)
+        {
+            printf("ERROR: cannot set data. '%s' is not a valid boolean value.\n", stringBuffer(value));
+            return JSON_ERROR;
+        }
+        *((Boolean *)node->data) = boolean;
     default:
-      printf("ERROR: cannot change data in node of unknown type.\n");
-      return JSON_ERROR;
-  }
+        printf("ERROR: cannot change data in node of unknown type.\n");
+        return JSON_ERROR;
+    }
 }
-
-
-// Sets the child number of a node of type object.
-int setChildNumber(node_t *node, int number)
-{
-  // Check the node is available.
-  if (node == NULL)
-  {
-    printf("ERROR: cannot change child number in NULL node.\n");
-    return JSON_ERROR;
-  }
-
-  // Check the node is of type object.
-  if (node->type != TYPE_OBJECT)
-  {
-    printf("ERROR. cannot change child number. Node is not of type OBJECT.\n");
-    return JSON_ERROR;
-  }
-
-  ((objData_t *) node->data)->childNumber = number;
-  return JSON_OK;
-}
-
 
 // Receives a number as a string and checks if it is valid.
-static int validateInteger(char *string)
+static int isInteger(const String *string)
 {
-  for (int i = 0, n = strlen(string); i < n; i++)
-  {
-    if (!isdigit(string[i]))
+    for (size_t i = 0, n = stringLength(string); i < n; i++)
     {
-      return JSON_ERROR;
+        if (!isdigit(stringGet(string, i)))
+        {
+            return 0;
+        }
     }
-  }
-
-  return JSON_OK;
+    return 1;
 }
-
 
 // Presuposes the data of the node is NULL and reserves memory
 // according to the type of the node.
-static int initializeData(node_t *node)
+static ResultCode initializeData(Node *node)
 {
-  // Check if the node is available.
-  if (node == NULL)
-  {
-    printf("ERROR: cannot reset data of NULL node.\n");
-    return JSON_ERROR;
-  }
+    // Check if the node is available.
+    if (node == NULL)
+    {
+        printf("ERROR: cannot reset data of NULL node.\n");
+        return JSON_ERROR;
+    }
 
-  // Check that the data is NULL, as expected.
-  if (node->data != NULL)
-  {
-    printf("ERROR: cannot initialize data of node. Data is not NULL.\n");
-    return JSON_ERROR;
-  }
+    // Check that the data is NULL, as expected.
+    if (node->data != NULL)
+    {
+        printf("ERROR: cannot initialize data of node. Data is not NULL.\n");
+        return JSON_ERROR;
+    }
 
-  // Decide depending on the type of node.
-  switch (node->type)
-  {
-    case TYPE_NULL:
-      return JSON_OK;
-    case TYPE_STRING:
-      // Create space for a string and initialize it to empty.
-      node->data = malloc(STRING_LENGTH + 1);
-      strcpy((char *) node->data, "");
-      return JSON_OK;
-    case TYPE_INTEGER:
-      // Create space for an integer and store a zero.
-      node->data = malloc(sizeof(int));
-      *((int *) node->data) = 0;
-      return JSON_OK;
-    case TYPE_BOOLEAN:
-      // Create space for a boolean (integer) and store unkown.
-      node->data = malloc(sizeof(boolean_t));
-      *((boolean_t *) node->data) = BOOL_UNKNOWN;
-      return JSON_OK;
-    case TYPE_OBJECT:
-      // Initialize an object data structure.
-      node->data = malloc(sizeof(objData_t));
-      initializeObjectData((objData_t *) node->data);
-      return JSON_OK;
-    case TYPE_ARRAY:
-      // TODO: reset data in an array node.
-      return JSON_ERROR;
+    // Decide depending on the type of node.
+    switch (node->type)
+    {
+    case NODE_TYPE_NULL:
+        return JSON_OK;
+    case NODE_TYPE_STRING:
+        // Create space for a string and initialize it to empty.
+        node->data = stringCreate();
+        return JSON_OK;
+    case NODE_TYPE_INTEGER:
+        // Create space for an integer and store a zero.
+        node->data = malloc(sizeof(int));
+        *((int *)node->data) = 0;
+        return JSON_OK;
+    case NODE_TYPE_BOOLEAN:
+        // Create space for a boolean (integer) and store unkown.
+        node->data = malloc(sizeof(Boolean));
+        *((Boolean *)node->data) = BOOL_UNKNOWN;
+        return JSON_OK;
+    case NODE_TYPE_OBJECT:
+        // Initialize an object data structure.
+        node->data = vectorCreate(VECTOR_TYPE_NODE);
+        return JSON_OK;
+    case NODE_TYPE_ARRAY:
+        // TODO: reset data in an array node.
+        return JSON_ERROR;
     default:
-      printf("ERROR: could not reset data in node. Type unknown.\n");
-      return JSON_ERROR;
-  }
+        printf("ERROR: could not reset data in node. Type unknown.\n");
+        return JSON_ERROR;
+    }
 }
 
-
-// Initializes the data structure when the node is of type OBJECT.
-static int initializeObjectData(objData_t *objData)
+// Receives a type code and validates it.
+int validateType(NodeType type)
 {
-  // Check if the pointer is available.
-  if (objData == NULL)
-  {
-    printf("ERROR. Cannot initialize NULL object data pointer.\n");
-    return JSON_ERROR;
-  }
+    switch (type)
+    {
+    case NODE_TYPE_NULL:
+    case NODE_TYPE_STRING:
+    case NODE_TYPE_INTEGER:
+    case NODE_TYPE_BOOLEAN:
+    case NODE_TYPE_ARRAY:
+    case NODE_TYPE_OBJECT:
+        return 1;
+    default:
+        return 0;
+    }
+}
 
-  objData->childNumber = 0;
-  for (int i = 0; i < NUMBER_OBJECTS; i++)
-  {
-    objData->objects[i] = NULL;
-  }
+// Receives a field code and validates it.
+int validateField(int field)
+{
+    switch (field)
+    {
+    case FIELD_TYPE:
+    case FIELD_KEY:
+    case FIELD_PARENT:
+    case FIELD_DATA:
+        return JSON_OK;
+    default:
+        return JSON_ERROR;
+    }
+}
 
-  return JSON_OK;
+// Gets the boolean as a string and returns its code.
+Boolean booleanStringToCode(const String *string)
+{
+    if (stringCompare(string, stringCreateFromLiteral("true")) == 0)
+    {
+        return BOOL_TRUE;
+    }
+    else if (stringCompare(string, stringCreateFromLiteral("false")) == 0)
+    {
+        return BOOL_FALSE;
+    }
+    else
+    {
+        printf("ERROR. %s is not a valid boolean type.\n", stringBuffer(string));
+        return BOOL_UNKNOWN;
+    }
+}
+
+// Gets a boolean code and converts it to a string
+// storing it in the buffer provided.
+String *booleanCodeToString(Boolean code)
+{
+    switch (code)
+    {
+    case BOOL_TRUE:
+        return stringCreateFromLiteral("true");
+    case BOOL_FALSE:
+        return stringCreateFromLiteral("false");
+    default:
+        printf("ERROR: boolean code is not valid.\n");
+        return NULL;
+    }
+}
+
+// Receives a string with the type of node.
+// and tries to convert to the type code.
+NodeType typeStringToCode(const String *string)
+{
+    if (string == NULL)
+    {
+        printf("ERROR: could not get the code for the type. No type provided.\n");
+        return NODE_TYPE_NULL;
+    }
+
+    // Decide depending on the string.
+    if (stringCompare(string, stringCreateFromLiteral("null")) == 0)
+    {
+        return NODE_TYPE_NULL;
+    }
+    else if (stringCompare(string, stringCreateFromLiteral("string")) == 0)
+    {
+        return NODE_TYPE_STRING;
+    }
+    else if (stringCompare(string, stringCreateFromLiteral("integer")) == 0)
+    {
+        return NODE_TYPE_INTEGER;
+    }
+    else if (stringCompare(string, stringCreateFromLiteral("boolean")) == 0)
+    {
+        return NODE_TYPE_BOOLEAN;
+    }
+    else if (stringCompare(string, stringCreateFromLiteral("array")) == 0)
+    {
+        return NODE_TYPE_ARRAY;
+    }
+    else if (stringCompare(string, stringCreateFromLiteral("object")) == 0)
+    {
+        return NODE_TYPE_OBJECT;
+    }
+    else
+    {
+        printf("ERROR: could not convert string '%s' to a valid type.\n", stringBuffer(string));
+        return NODE_TYPE_NULL;
+    }
 }
