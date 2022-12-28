@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "stdlib.h": "c",
+        "__bit_reference": "c",
+        "__split_buffer": "c",
+        "vector": "c",
+        "print.h": "c",
+        "utils.h": "c"
+    },
+    "C_Cpp.default.cStandard": "c11",
+    "files.exclude": {
+        "jsonwizard": true,
+        "src/*.d": true,
+        "src/*.o": true
+    }
+}
