@@ -17,7 +17,7 @@ ResultCode printToFile(const Node *root, const String *filename)
     String *name = stringJoin(filename, stringCreateFromLiteral(".json"));
 
     // Open the file in write mode.
-    FILE *file = fopen(stringBuffer(name), "w");
+    FILE *file = fopen(stringGetBuffer(name), "w");
     if (file == NULL)
     {
         printf("ERROR: Could not open a file to write to.\n");
@@ -53,7 +53,7 @@ ResultCode printToStdin(Node *root, const String *key)
         Node *parent = searchByKey(root, key);
         if (parent == NULL)
         {
-            printf("ERROR. Cannot print to stdin. Key %s was not found.\n", stringBuffer(key));
+            printf("ERROR. Cannot print to stdin. Key %s was not found.\n", stringGetBuffer(key));
             return JSON_ERROR;
         }
 
@@ -124,7 +124,7 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
         // Open the object and write the current buffer contents as this is a
         // recursive function
         stringCopy(buffer, stringCreateFromLiteral("{\n"));
-        fprintf(file, "%s", stringBuffer(buffer));
+        fprintf(file, "%s", stringGetBuffer(buffer));
 
         // Call this function recursively on its childs.
         Vector *children = (Vector *)node->data;
@@ -137,7 +137,7 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
         }
 
         // Write the last line that all object nodes finish with
-        stringFree(buffer);
+        stringReset(buffer);
         addBlanks(buffer, offset);
         stringCopy(buffer, stringCreateFromLiteral("}"));
     }
@@ -151,7 +151,7 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
     {
         stringCopy(buffer, stringCreateFromLiteral(","));
     }
-    fprintf(file, "%s\n", stringBuffer(buffer));
+    fprintf(file, "%s\n", stringGetBuffer(buffer));
     return JSON_OK;
 }
 

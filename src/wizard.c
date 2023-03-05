@@ -42,7 +42,7 @@ int main(int argc, char **argv)
         printf("\tjsonwizard> ");
 
         // Read all input provided by the user
-        stringFree(input);
+        stringReset(input);
         input = readUserInput();
         if (input == NULL)
         {
@@ -135,7 +135,7 @@ ResultCode parseCommand(const String *input, Vector *words)
     // Counter for letters.
     size_t charBegin = 0;
 
-    for (size_t i = 0, n = stringLength(input); i < n; i++)
+    for (size_t i = 0, n = stringGetLength(input); i < n; i++)
     {
         if (input->buffer[i] == ' ' || i == n - 1)
         {

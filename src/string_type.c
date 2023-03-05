@@ -6,23 +6,45 @@
 
 #include "utils.h"
 
-String *stringCreate(void)
+static String *stringCreateNonInitialised();
+
+String *stringCreateNonInitialised()
 {
     String *result = malloc(sizeof(String));
     if (result == NULL)
     {
-        printf("ERROR: memory error, could not reserve memory for new string");
         return NULL;
     }
     result->buffer = NULL;
+    result->length = 0;
     result->capacity = 0;
+    return result;
+}
+
+String *stringCreate(void)
+{
+    // Reserve memory for the structure itself
+    String *result = malloc(sizeof(String));
+    if (result == NULL)
+    {
+        return NULL;
+    }
+    // Initialise as an empty string
+    void *tmp = malloc(1);
+    if (tmp == NULL)
+    {
+        return NULL;
+    }
+    result->buffer = tmp;
+    result->buffer[0] = '\0';
+    result->capacity = 1;
     result->length = 0;
     return result;
 }
 
 String *stringCreateFromLiteral(const char *literal)
 {
-    String *result = stringCreate();
+    String *result = stringCreateNonInitialised();
     const size_t originalLength = strlen(literal);
     void *tmp = malloc(originalLength + 1);
     if (tmp == NULL)
@@ -30,18 +52,19 @@ String *stringCreateFromLiteral(const char *literal)
         return NULL;
     }
     result->buffer = tmp;
-    strcpy(result->buffer, literal);
+    memcpy(result->buffer, literal, originalLength);
+    result->buffer[originalLength] = '\0';
     result->capacity = originalLength + 1;
     result->length = originalLength;
     return result;
 }
 
-size_t stringLength(const String *string)
+size_t stringGetLength(const String *string)
 {
     return string->length;
 }
 
-char stringGet(const String *string, const size_t index)
+char stringGetChar(const String *string, const size_t index)
 {
     return string->buffer[index];
 }
@@ -62,41 +85,40 @@ ResultCode stringCopyFromBuffer(String *destination, const char *origin, const s
         return JSON_MEMORY_ERROR;
     }
 
-    // Create a string with the data that has been provided
-    String *addition = stringCreate();
+    // Reset the destination string
+    stringReset(destination);
+
+    // Alloc memory for the buffer
     void *tmp = malloc(size + 1);
     if (tmp == NULL)
     {
         return JSON_MEMORY_ERROR;
     }
-    addition->buffer = tmp;
-    memcpy(addition->buffer, origin, size);
-    addition->buffer[size] = '\0';
-    addition->capacity = size + 1;
-    addition->length = size;
-
-    // Delete contents in original string
-    stringFree(destination);
-
-    // Join both strings in place
-    if (stringJoinInPlace(destination, addition) != JSON_OK)
-    {
-        return JSON_ERROR;
-    }
-
+    destination->buffer = tmp;
+    memcpy(destination->buffer, origin, size);
+    destination->buffer[size] = '\0';
+    destination->length = size;
+    destination->capacity = size + 1;
     return JSON_OK;
 }
 
 int stringCompare(const String *string1, const String *string2)
 {
-    return strcmp(stringBuffer(string1), stringBuffer(string2));
+    if (string1 == NULL || string2 == NULL)
+    {
+        return -1;
+    }
+    if (stringGetBuffer(string1) == NULL || stringGetBuffer(string2) == NULL)
+    {
+        return -1;
+    }
+    return strcmp(stringGetBuffer(string1), stringGetBuffer(string2));
 }
 
 ResultCode stringJoinInPlace(String *string1, const String *string2)
 {
     if (string1 == NULL || string2 == NULL)
     {
-        printf("ERROR: strings provided are NULL");
         return JSON_MEMORY_ERROR;
     }
 
@@ -107,15 +129,15 @@ ResultCode stringJoinInPlace(String *string1, const String *string2)
     }
 
     // Check string 1 has enough capacity
-    if (string1->capacity + string1->length < string2->length)
+    size_t memoryNeeded = string1->length + string2->length + 1;
+    if (string1->capacity < memoryNeeded)
     {
-        void *tmpBuffer = realloc(string1->buffer, string1->length + string2->length + 1);
-        if (tmpBuffer)
+        void *tmp = realloc(string1->buffer, memoryNeeded);
+        if (tmp == NULL)
         {
-            printf("ERROR: could not reserve memory");
             return JSON_MEMORY_ERROR;
         }
-        string1->buffer = tmpBuffer;
+        string1->buffer = tmp;
     }
 
     // Copy the second string into the first one
@@ -129,38 +151,54 @@ ResultCode stringJoinInPlace(String *string1, const String *string2)
 
 String *stringJoin(const String *string1, const String *string2)
 {
-    String *result = stringCreate();
+    if (string1 == NULL || string2 == NULL)
+    {
+        return NULL;
+    }
+    String *result = stringCreateNonInitialised();
+    stringCopyFromBuffer(result, string1->buffer, string1->length);
     stringJoinInPlace(result, string2);
     return result;
 }
 
-void stringFree(String *string)
+void stringReset(String *string)
 {
-    free(string->buffer);
+    if (string == NULL)
+    {
+        return;
+    }
+    if (string->buffer != NULL)
+    {
+        free(string->buffer);
+    }
     string->buffer = NULL;
     string->length = 0;
     string->capacity = 0;
 }
 
-ResultCode stringReserve(String *string, const size_t additionalCapacity)
+ResultCode stringReserve(String *string, const size_t capacity)
 {
     if (string == NULL)
     {
-        printf("ERROR: string passed is NULL");
         return JSON_MEMORY_ERROR;
     }
-    char *tmp = realloc(string->buffer, string->capacity + additionalCapacity);
+    // Weird case where the user would want less capacity than currently?
+    // Probably should output a warning, but for the moment I ignore it
+    if (capacity <= string->capacity)
+    {
+        return JSON_OK;
+    }
+    char *tmp = realloc(string->buffer, capacity);
     if (tmp == NULL)
     {
-        printf("ERROR: could not add more capacity for string. Leaving as is");
         return JSON_MEMORY_ERROR;
     }
     string->buffer = tmp;
-    string->capacity = string->capacity + additionalCapacity;
+    string->capacity = capacity;
     return JSON_OK;
 }
 
-const char *stringBuffer(const String *string)
+const char *stringGetBuffer(const String *string)
 {
     return string->buffer;
 }

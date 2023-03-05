@@ -2,3 +2,5 @@
 **/**.o
 jsonwizard
 .DS_Store
+test/*
+!test/*.c

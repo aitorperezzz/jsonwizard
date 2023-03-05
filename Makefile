@@ -3,8 +3,8 @@ CC=clang
 
 # Compiler flags
 CFLAGS=-g -Wall -Werror -std=c11 -fsanitize=address
-CFLAGS_TEST=$(CFLAGS) -I./src -I/opt/homebrew/include/
-LDFLAGS_TEST=-lcmocka -L/opt/homebrew/lib -fsanitize=address
+CFLAGS_TEST=$(CFLAGS) -I./src
+LDFLAGS_TEST=-lcmocka -fsanitize=address
 
 # List sources, objects and dependencies
 SOURCES=$(wildcard src/*.c)
@@ -14,7 +14,6 @@ DEPENDS=$(patsubst src/%.c,src/%.d,$(SOURCES))
 # Lists for tests
 SOURCES_TEST=$(wildcard test/*.c)
 OBJECTS_TEST=$(patsubst test/%.c,test/%,$(SOURCES_TEST))
-TARGETS_TEST=$(patsubst test/%.o,test/%,$(OBJECTS_TEST))
 
 # Compilation targets
 TARGET=jsonwizard
@@ -23,21 +22,18 @@ TARGET=jsonwizard
 
 all: $(TARGET)
 
-test: $(TARGETS_TEST)
+test: $(OBJECTS) $(OBJECTS_TEST)
+
+-include $(DEPENDS)
 
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJECTS) -o $(TARGET)
 
--include $(DEPENDS)
-
 src/%.o: src/%.c Makefile
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
-test/%.o: test/%.c Makefile
-	$(CC) $(CFLAGS_TEST) -MMD -MP -c $< -o $@
-
-test/%: test/%.o Makefile
-	$(CC) $< -o $@ $(LDFLAGS_TEST)
+test/%: test/%.c Makefile
+	$(CC) $(CFLAGS_TEST) $(LDFLAGS_TEST) -MMD -MP $< -o $@
 
 clean:
-	rm -f $(OBJECTS) $(TARGET) $(DEPENDS) $(TARGETS_TEST)
+	rm -f $(OBJECTS) $(TARGET) $(DEPENDS) $(OBJECTS_TEST)

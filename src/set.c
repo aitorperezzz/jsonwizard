@@ -29,7 +29,7 @@ ResultCode jsonModify(Node *root, const String *key, const String *field, const 
     Node *node = searchByKey(root, key);
     if (node == NULL)
     {
-        printf("ERROR: cannot modify node. Key %s was not found.\n", stringBuffer(key));
+        printf("ERROR: cannot modify node. Key %s was not found.\n", stringGetBuffer(key));
         return JSON_ERROR;
     }
 
@@ -48,7 +48,7 @@ ResultCode jsonModify(Node *root, const String *key, const String *field, const 
     }
     else
     {
-        printf("ERROR: cannot modify node. '%s' is not a valid field.\n", stringBuffer(field));
+        printf("ERROR: cannot modify node. '%s' is not a valid field.\n", stringGetBuffer(field));
         return JSON_ERROR;
     }
 }
@@ -140,13 +140,13 @@ ResultCode setData(Node *node, const String *value)
             printf("ERROR: cannot set data. Not a valid integer value.\n");
             return JSON_ERROR;
         }
-        *((int *)node->data) = atoi(stringBuffer(value));
+        *((int *)node->data) = atoi(stringGetBuffer(value));
         return JSON_OK;
     case NODE_TYPE_BOOLEAN:;
         Boolean boolean = booleanStringToCode(value);
         if (boolean == BOOL_UNKNOWN)
         {
-            printf("ERROR: cannot set data. '%s' is not a valid boolean value.\n", stringBuffer(value));
+            printf("ERROR: cannot set data. '%s' is not a valid boolean value.\n", stringGetBuffer(value));
             return JSON_ERROR;
         }
         *((Boolean *)node->data) = boolean;
@@ -159,9 +159,9 @@ ResultCode setData(Node *node, const String *value)
 // Receives a number as a string and checks if it is valid.
 static int isInteger(const String *string)
 {
-    for (size_t i = 0, n = stringLength(string); i < n; i++)
+    for (size_t i = 0, n = stringGetLength(string); i < n; i++)
     {
-        if (!isdigit(stringGet(string, i)))
+        if (!isdigit(stringGetChar(string, i)))
         {
             return 0;
         }
@@ -264,7 +264,7 @@ Boolean booleanStringToCode(const String *string)
     }
     else
     {
-        printf("ERROR. %s is not a valid boolean type.\n", stringBuffer(string));
+        printf("ERROR. %s is not a valid boolean type.\n", stringGetBuffer(string));
         return BOOL_UNKNOWN;
     }
 }
@@ -322,7 +322,7 @@ NodeType typeStringToCode(const String *string)
     }
     else
     {
-        printf("ERROR: could not convert string '%s' to a valid type.\n", stringBuffer(string));
+        printf("ERROR: could not convert string '%s' to a valid type.\n", stringGetBuffer(string));
         return NODE_TYPE_NULL;
     }
 }

@@ -23,7 +23,7 @@ int jsonDelete(Node **rootAddress, const String *key)
     Node *node = searchByKey(*rootAddress, key);
     if (node == NULL)
     {
-        printf("ERROR: cannot delete node. Key %s was not found.\n", stringBuffer(key));
+        printf("ERROR: cannot delete node. Key %s was not found.\n", stringGetBuffer(key));
         return JSON_ERROR;
     }
 
