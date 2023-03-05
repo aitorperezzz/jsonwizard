@@ -107,7 +107,7 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
     {
         int number = *((int *)node->data);
         char numberBuffer[sizeof(char) * (int)log10(number)];
-        sprintf(numberBuffer, "%d", number);
+        snprintf(numberBuffer, sizeof(numberBuffer), "%d", number);
         stringCopyFromBuffer(buffer, numberBuffer, strlen(numberBuffer));
     }
     else if (node->type == NODE_TYPE_BOOLEAN)

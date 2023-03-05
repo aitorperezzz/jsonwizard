@@ -24,7 +24,7 @@ String *stringCreateFromLiteral(const char *literal)
 {
     String *result = stringCreate();
     const size_t originalLength = strlen(literal);
-    void *tmp = malloc(originalLength);
+    void *tmp = malloc(originalLength + 1);
     if (tmp == NULL)
     {
         return NULL;
@@ -48,13 +48,11 @@ char stringGet(const String *string, const size_t index)
 
 ResultCode stringCopy(String *destination, const String *origin)
 {
-    stringFree(destination);
-    char *tmp = malloc(origin->length + 1);
-    if (tmp == NULL)
+    if (destination == NULL || origin == NULL)
     {
         return JSON_MEMORY_ERROR;
     }
-    return JSON_OK;
+    return stringCopyFromBuffer(destination, origin->buffer, origin->length);
 }
 
 ResultCode stringCopyFromBuffer(String *destination, const char *origin, const size_t size)
@@ -66,17 +64,19 @@ ResultCode stringCopyFromBuffer(String *destination, const char *origin, const s
 
     // Create a string with the data that has been provided
     String *addition = stringCreate();
-    const size_t numChars = strlen(origin);
-    void *tmp = malloc(numChars + 1);
+    void *tmp = malloc(size + 1);
     if (tmp == NULL)
     {
         return JSON_MEMORY_ERROR;
     }
     addition->buffer = tmp;
-    strcpy(addition->buffer, origin);
-    addition->buffer[numChars + 1] = '\0';
-    addition->capacity = numChars + 1;
-    addition->length = numChars;
+    memcpy(addition->buffer, origin, size);
+    addition->buffer[size] = '\0';
+    addition->capacity = size + 1;
+    addition->length = size;
+
+    // Delete contents in original string
+    stringFree(destination);
 
     // Join both strings in place
     if (stringJoinInPlace(destination, addition) != JSON_OK)
@@ -137,6 +137,7 @@ String *stringJoin(const String *string1, const String *string2)
 void stringFree(String *string)
 {
     free(string->buffer);
+    string->buffer = NULL;
     string->length = 0;
     string->capacity = 0;
 }
