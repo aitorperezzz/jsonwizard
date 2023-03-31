@@ -22,7 +22,7 @@ ResultCode jsonModify(Node *root, const String *key, const String *field, const 
     if (root == NULL)
     {
         printf("ERROR: cannot modify node if root is NULL.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Try to find the relevant node.
@@ -30,7 +30,7 @@ ResultCode jsonModify(Node *root, const String *key, const String *field, const 
     if (node == NULL)
     {
         printf("ERROR: cannot modify node. Key %s was not found.\n", stringGetBuffer(key));
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Decide based on the field.
@@ -49,7 +49,7 @@ ResultCode jsonModify(Node *root, const String *key, const String *field, const 
     else
     {
         printf("ERROR: cannot modify node. '%s' is not a valid field.\n", stringGetBuffer(field));
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 }
 
@@ -60,14 +60,14 @@ ResultCode setType(Node *node, NodeType type)
     if (node == NULL)
     {
         printf("ERROR: cannot set type in NULL node.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Validate the type provided.
     if (!validateType(type))
     {
         printf("ERROR: cannot change type of node. Type is not valid.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // First free the data of the node.
@@ -85,20 +85,20 @@ ResultCode setKey(Node *node, const String *key)
     if (node == NULL)
     {
         printf("ERROR: cannot set key in NULL node.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Check a key was provided.
     if (key == NULL)
     {
         printf("ERROR: cannot set key in node. No key was provided.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // TODO: check the key is not already in use.
 
     stringCopy(node->key, key);
-    return JSON_OK;
+    return CODE_OK;
 }
 
 // Receives data for a node as a string.
@@ -109,14 +109,14 @@ ResultCode setData(Node *node, const String *value)
     if (node == NULL)
     {
         printf("ERROR: cannot set data in NULL node.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Check that data was provided.
     if (value == NULL)
     {
         printf("ERROR: cannot set data in node. No data was provided.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Check the node is of the correct type.
@@ -125,34 +125,34 @@ ResultCode setData(Node *node, const String *value)
     case NODE_TYPE_NULL:
         printf("ERROR: cannot set data in a node of type NULL.\n");
         printf("Change its type first.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     case NODE_TYPE_OBJECT:
     case NODE_TYPE_ARRAY:
         printf("ERROR: cannot modify data inside ARRAY and OBJECT nodes with setData.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     case NODE_TYPE_STRING:
         node->data = stringCreate();
         stringCopy((String *)node->data, value);
-        return JSON_OK;
-    case NODE_TYPE_INTEGER:
+        return CODE_OK;
+    case NODE_TYPE_NUMBER:
         if (!isInteger(value))
         {
             printf("ERROR: cannot set data. Not a valid integer value.\n");
-            return JSON_ERROR;
+            return CODE_ERROR;
         }
         *((int *)node->data) = atoi(stringGetBuffer(value));
-        return JSON_OK;
+        return CODE_OK;
     case NODE_TYPE_BOOLEAN:;
         Boolean boolean = booleanStringToCode(value);
         if (boolean == BOOL_UNKNOWN)
         {
             printf("ERROR: cannot set data. '%s' is not a valid boolean value.\n", stringGetBuffer(value));
-            return JSON_ERROR;
+            return CODE_ERROR;
         }
         *((Boolean *)node->data) = boolean;
     default:
         printf("ERROR: cannot change data in node of unknown type.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 }
 
@@ -177,45 +177,45 @@ static ResultCode initializeData(Node *node)
     if (node == NULL)
     {
         printf("ERROR: cannot reset data of NULL node.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Check that the data is NULL, as expected.
     if (node->data != NULL)
     {
         printf("ERROR: cannot initialize data of node. Data is not NULL.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Decide depending on the type of node.
     switch (node->type)
     {
     case NODE_TYPE_NULL:
-        return JSON_OK;
+        return CODE_OK;
     case NODE_TYPE_STRING:
         // Create space for a string and initialize it to empty.
         node->data = stringCreate();
-        return JSON_OK;
-    case NODE_TYPE_INTEGER:
+        return CODE_OK;
+    case NODE_TYPE_NUMBER:
         // Create space for an integer and store a zero.
         node->data = malloc(sizeof(int));
         *((int *)node->data) = 0;
-        return JSON_OK;
+        return CODE_OK;
     case NODE_TYPE_BOOLEAN:
         // Create space for a boolean (integer) and store unkown.
         node->data = malloc(sizeof(Boolean));
         *((Boolean *)node->data) = BOOL_UNKNOWN;
-        return JSON_OK;
+        return CODE_OK;
     case NODE_TYPE_OBJECT:
         // Initialize an object data structure.
         node->data = vectorCreate(VECTOR_TYPE_NODE);
-        return JSON_OK;
+        return CODE_OK;
     case NODE_TYPE_ARRAY:
         // TODO: reset data in an array node.
-        return JSON_ERROR;
+        return CODE_ERROR;
     default:
         printf("ERROR: could not reset data in node. Type unknown.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 }
 
@@ -226,7 +226,7 @@ int validateType(NodeType type)
     {
     case NODE_TYPE_NULL:
     case NODE_TYPE_STRING:
-    case NODE_TYPE_INTEGER:
+    case NODE_TYPE_NUMBER:
     case NODE_TYPE_BOOLEAN:
     case NODE_TYPE_ARRAY:
     case NODE_TYPE_OBJECT:
@@ -245,9 +245,9 @@ int validateField(int field)
     case FIELD_KEY:
     case FIELD_PARENT:
     case FIELD_DATA:
-        return JSON_OK;
+        return CODE_OK;
     default:
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 }
 
@@ -306,7 +306,7 @@ NodeType typeStringToCode(const String *string)
     }
     else if (stringCompare(string, stringCreateFromLiteral("integer")) == 0)
     {
-        return NODE_TYPE_INTEGER;
+        return NODE_TYPE_NUMBER;
     }
     else if (stringCompare(string, stringCreateFromLiteral("boolean")) == 0)
     {

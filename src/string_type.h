@@ -5,6 +5,7 @@
 
 #include "utils.h"
 
+/// @brief Definition of a string
 typedef struct String_st
 {
     char *buffer;
@@ -12,8 +13,9 @@ typedef struct String_st
     int capacity;
 } String;
 
-/// @brief Create a string. This method always needs to be called when creating a string
-/// @return Pointer to a string structure
+/// @brief Create a string type
+/// @return Pointer to a string structure initialised as an empty string, or NULL if
+/// a problem was encountered
 String *stringCreate(void);
 
 /// @brief Create a string structure from an already existing C string

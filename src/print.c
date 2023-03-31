@@ -21,7 +21,7 @@ ResultCode printToFile(const Node *root, const String *filename)
     if (file == NULL)
     {
         printf("ERROR: Could not open a file to write to.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Print the root struct Node to the file.
@@ -29,7 +29,7 @@ ResultCode printToFile(const Node *root, const String *filename)
 
     // Close the file.
     fclose(file);
-    return JSON_OK;
+    return CODE_OK;
 }
 
 // Receives a pointer to the whole JSON and a key, and
@@ -39,7 +39,7 @@ ResultCode printToStdin(Node *root, const String *key)
     if (root == NULL)
     {
         printf("ERROR: Cannot print to stdin. Root is NULL.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     if (stringCompare(key, stringCreateFromLiteral("")) == 0)
@@ -54,7 +54,7 @@ ResultCode printToStdin(Node *root, const String *key)
         if (parent == NULL)
         {
             printf("ERROR. Cannot print to stdin. Key %s was not found.\n", stringGetBuffer(key));
-            return JSON_ERROR;
+            return CODE_ERROR;
         }
 
         return printNode(NULL, parent, 0, 1);
@@ -70,12 +70,12 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
     if (file == NULL)
     {
         printf("ERROR: file pointer provided is NULL");
-        return JSON_MEMORY_ERROR;
+        return CODE_MEMORY_ERROR;
     }
     if (node == NULL)
     {
         printf("ERROR: node provided is NULL");
-        return JSON_MEMORY_ERROR;
+        return CODE_MEMORY_ERROR;
     }
 
     // Create a buffer for the line to be written.
@@ -103,7 +103,7 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
         stringCopy(buffer, (String *)node->data);
         stringCopy(buffer, stringCreateFromLiteral("\""));
     }
-    else if (node->type == NODE_TYPE_INTEGER)
+    else if (node->type == NODE_TYPE_NUMBER)
     {
         int number = *((int *)node->data);
         char numberBuffer[sizeof(char) * (int)log10(number)];
@@ -143,7 +143,7 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
     }
     else
     {
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Print the buffer contents
@@ -152,7 +152,7 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
         stringCopy(buffer, stringCreateFromLiteral(","));
     }
     fprintf(file, "%s\n", stringGetBuffer(buffer));
-    return JSON_OK;
+    return CODE_OK;
 }
 
 // Writes blank spaces to a string.
@@ -162,5 +162,5 @@ static ResultCode addBlanks(String *string, size_t number)
     char blanks[2 * number];
     memset(blanks, ' ', 2 * number);
     stringCopyFromBuffer(string, blanks, 2 * number);
-    return JSON_OK;
+    return CODE_OK;
 }

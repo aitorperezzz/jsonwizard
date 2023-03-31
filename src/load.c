@@ -41,7 +41,7 @@ ResultCode jsonLoad(Node **rootAddress, String *filename)
         printf("ERROR. could not open the file %s.\n", stringGetBuffer(filename));
         // fclose(file);
         *rootAddress = createRoot();
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Try to convert it to a string.
@@ -51,7 +51,7 @@ ResultCode jsonLoad(Node **rootAddress, String *filename)
         printf("ERROR: could not parse the file to a string.\n");
         fclose(file);
         *rootAddress = createRoot();
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Print the string obtained.
@@ -67,7 +67,7 @@ ResultCode jsonLoad(Node **rootAddress, String *filename)
         free(jsonString);
         // free(newRoot);
         *rootAddress = createRoot();
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
     else
     {
@@ -77,7 +77,7 @@ ResultCode jsonLoad(Node **rootAddress, String *filename)
         printf("JSON loaded to memory:\n");
         printToStdin(newRoot, stringCreateFromLiteral("root"));
         fclose(file);
-        return JSON_OK;
+        return CODE_OK;
     }
 }
 
@@ -217,7 +217,7 @@ static Node *parseNode(const String *string)
         stringCopyFromBuffer(numberString, stringGetBuffer(string) + position, valueLength);
 
         // Update node information.
-        setType(node, NODE_TYPE_INTEGER);
+        setType(node, NODE_TYPE_NUMBER);
         setData(node, numberString);
     }
     else if (stringGetChar(string, position) == 't' || stringGetChar(string, position) == 'f')
@@ -281,7 +281,7 @@ static Node *parseNode(const String *string)
 
                 // Add the new node to the child array.
                 newNode->parent = node;
-                vectorAdd(data, newNode, sizeof(newNode));
+                vectorPush(data, newNode, sizeof(newNode));
 
                 // Prepare for the next node.
                 pointer = pointer + childSize;

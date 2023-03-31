@@ -69,7 +69,7 @@ static void testCopy(void **state)
     string1 = stringCreateFromLiteral("My literal string");
     string2 = stringCreate();
     result = stringCopy(string2, string1);
-    assert_int_equal(result, JSON_OK);
+    assert_int_equal(result, CODE_OK);
     assert_string_equal(string2->buffer, string1->buffer);
     assert_int_equal(string2->length, string1->length);
     assert_int_equal(string2->capacity, string1->capacity);
@@ -82,7 +82,7 @@ static void testCopy(void **state)
     string1 = NULL;
     string2 = stringCreate();
     result = stringCopy(string1, string2);
-    assert_int_equal(result, JSON_MEMORY_ERROR);
+    assert_int_equal(result, CODE_MEMORY_ERROR);
     stringReset(string1);
     stringReset(string2);
     free(string1);
@@ -92,7 +92,7 @@ static void testCopy(void **state)
     string1 = stringCreate();
     string2 = NULL;
     result = stringCopy(string1, string2);
-    assert_int_equal(result, JSON_MEMORY_ERROR);
+    assert_int_equal(result, CODE_MEMORY_ERROR);
     stringReset(string1);
     stringReset(string2);
     free(string1);
@@ -108,7 +108,7 @@ static void testCopyFromBuffer(void **state)
     string1 = stringCreateFromLiteral("My literal string");
     string2 = stringCreate();
     result = stringCopyFromBuffer(string2, string1->buffer, string1->length);
-    assert_int_equal(result, JSON_OK);
+    assert_int_equal(result, CODE_OK);
     assert_string_equal(string2->buffer, string1->buffer);
     assert_int_equal(string2->length, string1->length);
     assert_int_equal(string2->capacity, string1->capacity);
@@ -121,7 +121,7 @@ static void testCopyFromBuffer(void **state)
     string1 = NULL;
     string2 = stringCreate();
     result = stringCopyFromBuffer(string1, string2->buffer, string2->length);
-    assert_int_equal(result, JSON_MEMORY_ERROR);
+    assert_int_equal(result, CODE_MEMORY_ERROR);
     stringReset(string1);
     stringReset(string2);
     free(string1);
@@ -172,7 +172,7 @@ static void testJoinInPlace(void **state)
     string1 = stringCreateFromLiteral("string1");
     string2 = stringCreateFromLiteral("string2");
     result = stringJoinInPlace(string1, string2);
-    assert_int_equal(result, JSON_OK);
+    assert_int_equal(result, CODE_OK);
     assert_string_equal(string1->buffer, "string1string2");
     stringReset(string1);
     stringReset(string2);
@@ -183,7 +183,7 @@ static void testJoinInPlace(void **state)
     string1 = stringCreate();
     string2 = stringCreateFromLiteral("string2");
     result = stringJoinInPlace(string1, string2);
-    assert_int_equal(result, JSON_OK);
+    assert_int_equal(result, CODE_OK);
     assert_string_equal(string1->buffer, "string2");
     stringReset(string1);
     stringReset(string2);
@@ -194,7 +194,7 @@ static void testJoinInPlace(void **state)
     string1 = stringCreateFromLiteral("string1");
     string2 = stringCreate();
     result = stringJoinInPlace(string1, string2);
-    assert_int_equal(result, JSON_OK);
+    assert_int_equal(result, CODE_OK);
     assert_string_equal(string1->buffer, "string1");
     stringReset(string1);
     stringReset(string2);
@@ -205,7 +205,7 @@ static void testJoinInPlace(void **state)
     string1 = stringCreate();
     string2 = stringCreate();
     result = stringJoinInPlace(string1, string2);
-    assert_int_equal(result, JSON_OK);
+    assert_int_equal(result, CODE_OK);
     assert_string_equal(string1->buffer, "");
     stringReset(string1);
     stringReset(string2);

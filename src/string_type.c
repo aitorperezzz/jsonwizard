@@ -73,7 +73,7 @@ ResultCode stringCopy(String *destination, const String *origin)
 {
     if (destination == NULL || origin == NULL)
     {
-        return JSON_MEMORY_ERROR;
+        return CODE_MEMORY_ERROR;
     }
     return stringCopyFromBuffer(destination, origin->buffer, origin->length);
 }
@@ -82,7 +82,7 @@ ResultCode stringCopyFromBuffer(String *destination, const char *origin, const s
 {
     if (destination == NULL || origin == NULL)
     {
-        return JSON_MEMORY_ERROR;
+        return CODE_MEMORY_ERROR;
     }
 
     // Reset the destination string
@@ -92,14 +92,14 @@ ResultCode stringCopyFromBuffer(String *destination, const char *origin, const s
     void *tmp = malloc(size + 1);
     if (tmp == NULL)
     {
-        return JSON_MEMORY_ERROR;
+        return CODE_MEMORY_ERROR;
     }
     destination->buffer = tmp;
     memcpy(destination->buffer, origin, size);
     destination->buffer[size] = '\0';
     destination->length = size;
     destination->capacity = size + 1;
-    return JSON_OK;
+    return CODE_OK;
 }
 
 int stringCompare(const String *string1, const String *string2)
@@ -119,13 +119,13 @@ ResultCode stringJoinInPlace(String *string1, const String *string2)
 {
     if (string1 == NULL || string2 == NULL)
     {
-        return JSON_MEMORY_ERROR;
+        return CODE_MEMORY_ERROR;
     }
 
     // Check, if second string is empty, do nothing
     if (string2->length == 0)
     {
-        return JSON_OK;
+        return CODE_OK;
     }
 
     // Check string 1 has enough capacity
@@ -135,7 +135,7 @@ ResultCode stringJoinInPlace(String *string1, const String *string2)
         void *tmp = realloc(string1->buffer, memoryNeeded);
         if (tmp == NULL)
         {
-            return JSON_MEMORY_ERROR;
+            return CODE_MEMORY_ERROR;
         }
         string1->buffer = tmp;
     }
@@ -146,7 +146,7 @@ ResultCode stringJoinInPlace(String *string1, const String *string2)
     string1->buffer[finalLength] = '\0';
     string1->length = finalLength;
     string1->capacity = finalLength + 1;
-    return JSON_OK;
+    return CODE_OK;
 }
 
 String *stringJoin(const String *string1, const String *string2)
@@ -180,22 +180,22 @@ ResultCode stringReserve(String *string, const size_t capacity)
 {
     if (string == NULL)
     {
-        return JSON_MEMORY_ERROR;
+        return CODE_MEMORY_ERROR;
     }
     // Weird case where the user would want less capacity than currently?
     // Probably should output a warning, but for the moment I ignore it
     if (capacity <= string->capacity)
     {
-        return JSON_OK;
+        return CODE_OK;
     }
     char *tmp = realloc(string->buffer, capacity);
     if (tmp == NULL)
     {
-        return JSON_MEMORY_ERROR;
+        return CODE_MEMORY_ERROR;
     }
     string->buffer = tmp;
     string->capacity = capacity;
-    return JSON_OK;
+    return CODE_OK;
 }
 
 const char *stringGetBuffer(const String *string)

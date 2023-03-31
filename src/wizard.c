@@ -51,12 +51,12 @@ int main(int argc, char **argv)
         }
 
         // Parse input into words
-        if (vectorClear(words) != JSON_OK)
+        if (vectorClear(words) != CODE_OK)
         {
             printf("Could not clear last user command");
             return -1;
         }
-        if (parseCommand(input, words) == JSON_ERROR)
+        if (parseCommand(input, words) == CODE_ERROR)
         {
             printf("ERROR: there was an error parsing the command. Continuing...\n");
             continue;
@@ -64,21 +64,15 @@ int main(int argc, char **argv)
 
         // Execute the command and treat the errors.
         ResultCode result = executeCommand(words, &root);
-        if (result == JSON_OK)
+        if (result == CODE_OK)
         {
             printf("The command executed correctly. Continuing...\n");
             continue;
         }
-        else if (result == JSON_ERROR)
+        else if (result == CODE_ERROR)
         {
             printf("The command could not be executed. Continuing...\n");
             continue;
-        }
-        else if (result == JSON_QUIT)
-        {
-            jsonQuit(root, words);
-            printf("Exiting the program...\n");
-            break;
         }
     }
 }
@@ -96,7 +90,7 @@ ResultCode printHelp()
     printf("\t> help\n");
     printf("\t> quit\n");
 
-    return JSON_OK;
+    return CODE_OK;
 }
 
 String *readUserInput()
@@ -107,7 +101,7 @@ String *readUserInput()
     size_t index = 0;
     do
     {
-        if (stringReserve(input, input->capacity + chunkSize) != JSON_OK)
+        if (stringReserve(input, input->capacity + chunkSize) != CODE_OK)
         {
             return NULL;
         }
@@ -125,11 +119,11 @@ ResultCode parseCommand(const String *input, Vector *words)
     // General checks
     if (input == NULL)
     {
-        return JSON_MEMORY_ERROR;
+        return CODE_MEMORY_ERROR;
     }
     if (words == NULL)
     {
-        return JSON_MEMORY_ERROR;
+        return CODE_MEMORY_ERROR;
     }
 
     // Counter for letters.
@@ -141,11 +135,11 @@ ResultCode parseCommand(const String *input, Vector *words)
         {
             String *newWord = stringCreate();
             stringCopyFromBuffer(newWord, input->buffer + charBegin, i - charBegin);
-            vectorAdd(words, (void *)newWord, sizeof(newWord));
+            vectorPush(words, (void *)newWord, sizeof(newWord));
             continue;
         }
     }
-    return JSON_OK;
+    return CODE_OK;
 }
 
 // Execute the command.
@@ -181,10 +175,6 @@ ResultCode executeCommand(const Vector *command, Node **rootAddress)
         // Structure: load <filename>.
         return jsonLoad(rootAddress, vectorGet(command, 1));
     }
-    else if (strcmp(vectorGet(command, 0), "quit") == 0)
-    {
-        return JSON_QUIT;
-    }
     else if (strcmp(vectorGet(command, 0), "help") == 0)
     {
         return printHelp();
@@ -192,7 +182,7 @@ ResultCode executeCommand(const Vector *command, Node **rootAddress)
     else
     {
         printf("ERROR: the command could not be understood.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 }
 
@@ -208,7 +198,7 @@ Node *createNode(void)
     }
 
     // Initialize it to default values.
-    if (initializeNode(node) == JSON_OK)
+    if (initializeNode(node) == CODE_OK)
     {
         return node;
     }
@@ -237,7 +227,7 @@ ResultCode initializeNode(Node *node)
     if (node == NULL)
     {
         printf("ERROR: cannot initialize a NULL node.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     node->type = NODE_TYPE_NULL;
@@ -245,7 +235,7 @@ ResultCode initializeNode(Node *node)
     node->parent = NULL;
     node->data = NULL;
 
-    return JSON_OK;
+    return CODE_OK;
 }
 
 // Append a node to a parent node.
@@ -256,7 +246,7 @@ ResultCode jsonAppend(Node **rootAddress, const String *parentKey, const String 
     if (root == NULL)
     {
         printf("ERROR: cannot append node because root is NULL.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Try to find the parent node.
@@ -264,17 +254,17 @@ ResultCode jsonAppend(Node **rootAddress, const String *parentKey, const String 
     if (parent == NULL)
     {
         printf("ERROR: could not find the parent key in the root node.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
     else if (validateType(parent->type))
     {
         printf("ERROR: cannot append node to a node without a valid type.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
     else if (parent->type != NODE_TYPE_OBJECT)
     {
         printf("ERROR: cannot append node to a node that is not of type object.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // TODO: prevent from appending when the key is already found.
@@ -284,15 +274,15 @@ ResultCode jsonAppend(Node **rootAddress, const String *parentKey, const String 
     if (newNode == NULL)
     {
         printf("ERROR: could not create a child node.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
     setKey(newNode, childKey);
 
     // Link the parent to the child.
-    vectorAdd((Vector *)parent->data, newNode, sizeof(newNode));
+    vectorPush((Vector *)parent->data, newNode, sizeof(newNode));
     newNode->parent = parent;
 
-    return JSON_OK;
+    return CODE_OK;
 }
 
 // Tries to find, recursively, a node with the specified key.

@@ -22,11 +22,12 @@ typedef struct
 
 Vector *vectorCreate(const VectorType type);
 const size_t vectorSize(const Vector *vector);
-ResultCode vectorAdd(Vector *vector, const void *data, const size_t dataSize);
+ResultCode vectorPush(Vector *vector, const void *data, const size_t dataSize);
 ResultCode vectorClear(Vector *vector);
 ResultCode vectorFree(Vector *vector);
 void *vectorGet(const Vector *vector, const size_t index);
-void vectorSet(Vector *vector, const size_t index, const void *data);
-void vectorErase(Vector *vector, const size_t index);
+ResultCode vectorSet(Vector *vector, const size_t index, const void *data);
+ResultCode vectorErase(Vector *vector, const size_t index);
+ResultCode vectorFind(const Vector *vector, const void *data, const size_t dataSize, size_t *index);
 
 #endif

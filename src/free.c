@@ -16,7 +16,7 @@ int jsonDelete(Node **rootAddress, const String *key)
     if (*rootAddress == NULL)
     {
         printf("ERROR: cannot delete node in a NULL root node.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Try to find the relevant node to delete.
@@ -24,7 +24,7 @@ int jsonDelete(Node **rootAddress, const String *key)
     if (node == NULL)
     {
         printf("ERROR: cannot delete node. Key %s was not found.\n", stringGetBuffer(key));
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Try to get the parent node.
@@ -37,12 +37,12 @@ int jsonDelete(Node **rootAddress, const String *key)
             // The user wants to delete the root tree.
             freeNode(*rootAddress);
             *rootAddress = createRoot();
-            return JSON_OK;
+            return CODE_OK;
         }
         else
         {
             printf("ERROR: cannot delete node. Parent was not found.\n");
-            return JSON_ERROR;
+            return CODE_ERROR;
         }
     }
 
@@ -59,14 +59,14 @@ int jsonDelete(Node **rootAddress, const String *key)
     if (i == vectorSize(parentData))
     {
         printf("ERROR: could not delete node. Index of child not found.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Erase the i-th element in the vector
     vectorErase(parentData, i);
     freeNode(node);
 
-    return JSON_OK;
+    return CODE_OK;
 }
 
 // Quits the program.
@@ -78,7 +78,7 @@ int jsonQuit(Node *root, Vector *words)
     // Free the command buffer.
     vectorFree(words);
 
-    return JSON_QUIT;
+    return -1;
 }
 
 // Deletes only the data of a node if necessary.
@@ -88,27 +88,27 @@ int freeData(Node *node)
     if (node == NULL)
     {
         printf("ERROR: cannot free data in NULL node.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     // Check if there is actually some data.
     if (node->data == NULL)
     {
         // Nothing to do.
-        return JSON_OK;
+        return CODE_OK;
     }
 
     // Now decide according to the type of node.
     switch (node->type)
     {
     case NODE_TYPE_NULL:
-        return JSON_OK;
+        return CODE_OK;
     case NODE_TYPE_STRING:
-    case NODE_TYPE_INTEGER:
+    case NODE_TYPE_NUMBER:
     case NODE_TYPE_BOOLEAN:
         free(node->data);
         node->data = NULL;
-        return JSON_OK;
+        return CODE_OK;
     case NODE_TYPE_OBJECT:
         // Free the child objects.
         ;
@@ -120,12 +120,12 @@ int freeData(Node *node)
 
         // Free the object data structure itself.
         free(data);
-        return JSON_OK;
+        return CODE_OK;
     case NODE_TYPE_ARRAY:
         // TODO: free the data of an array node.
-        return JSON_ERROR;
+        return CODE_ERROR;
     default:
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 }
 
@@ -136,11 +136,11 @@ int freeNode(Node *node)
     if (node == NULL)
     {
         printf("ERROR: cannot free NULL node.\n");
-        return JSON_ERROR;
+        return CODE_ERROR;
     }
 
     freeData(node);
     free(node);
 
-    return JSON_ERROR;
+    return CODE_ERROR;
 }

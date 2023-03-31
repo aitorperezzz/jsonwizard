@@ -33,25 +33,25 @@ const size_t vectorSize(const Vector *vector)
     return vector->size;
 }
 
-ResultCode vectorAdd(Vector *vector, const void *data, const size_t dataSize)
+ResultCode vectorPush(Vector *vector, const void *data, const size_t dataSize)
 {
     // Initial checks
     if (vector == NULL)
     {
         printf("ERROR: vector provided is NULL");
-        return JSON_MEMORY_ERROR;
+        return CODE_MEMORY_ERROR;
     }
     if (data == NULL)
     {
         printf("ERROR: data provided to add to vector is NULL");
-        return JSON_MEMORY_ERROR;
+        return CODE_MEMORY_ERROR;
     }
 
     // Check the data size provided matches the expected element size
     if (dataSize != vector->elementSize)
     {
         printf("ERROR: data provided does not have the expected size. Will not add");
-        return JSON_MEMORY_ERROR;
+        return CODE_MEMORY_ERROR;
     }
 
     // Check if I need to reserve more memory
@@ -60,7 +60,7 @@ ResultCode vectorAdd(Vector *vector, const void *data, const size_t dataSize)
         void *tmp = realloc(vector->data, vector->capacity + vector->elementSize);
         if (tmp == NULL)
         {
-            return JSON_MEMORY_ERROR;
+            return CODE_MEMORY_ERROR;
         }
         vector->data = tmp;
         vector->capacity += 1;
@@ -69,17 +69,17 @@ ResultCode vectorAdd(Vector *vector, const void *data, const size_t dataSize)
     // Add element to the end of vector
     memcpy(vector->data + vector->elementSize * vector->size, data, vector->elementSize);
     vector->size += 1;
-    return JSON_OK;
+    return CODE_OK;
 }
 
 ResultCode vectorClear(Vector *vector)
 {
-    return JSON_OK;
+    return CODE_OK;
 }
 
 ResultCode vectorFree(Vector *vector)
 {
-    return JSON_OK;
+    return CODE_OK;
 }
 
 void *vectorGet(const Vector *vector, const size_t index)
@@ -92,9 +92,17 @@ void *vectorGet(const Vector *vector, const size_t index)
     return vector->data + index * vector->elementSize;
 }
 
-void vectorSet(Vector *vector, const size_t index, const void *data)
+ResultCode vectorSet(Vector *vector, const size_t index, const void *data)
 {
+    return CODE_NOT_SUPPORTED;
 }
-void vectorErase(Vector *vector, const size_t index)
+
+ResultCode vectorErase(Vector *vector, const size_t index)
 {
+    return CODE_NOT_SUPPORTED;
+}
+
+ResultCode vectorFind(const Vector *vector, const void *data, const size_t dataSize, size_t *index)
+{
+    return CODE_NOT_SUPPORTED;
 }

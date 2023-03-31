@@ -3,18 +3,18 @@
 
 #include "string_type.h"
 
-// Types of nodes
+/// @brief Types of nodes
 typedef enum
 {
     NODE_TYPE_NULL, // Node does not have a valid type
     NODE_TYPE_STRING,
-    NODE_TYPE_INTEGER,
+    NODE_TYPE_NUMBER,
     NODE_TYPE_BOOLEAN,
     NODE_TYPE_ARRAY,
     NODE_TYPE_OBJECT
 } NodeType;
 
-// Types of fields inside a node
+/// @brief Modifyable fields on each node
 typedef enum
 {
     FIELD_TYPE,
@@ -23,15 +23,7 @@ typedef enum
     FIELD_DATA
 } NodeField;
 
-// Possible boolean values
-typedef enum
-{
-    BOOL_TRUE,
-    BOOL_FALSE,
-    BOOL_UNKNOWN
-} Boolean;
-
-// Variables inside a node
+/// @brief Definition of a node structure
 typedef struct Node_st
 {
     NodeType type;
@@ -39,5 +31,19 @@ typedef struct Node_st
     struct Node_st *parent;
     void *data;
 } Node;
+
+Node *nodeCreate(const String *name);
+
+ResultCode nodeAppend(Node *node, const String *parent, const String *name);
+
+Node *nodeGet(Node *root, const String *key);
+
+ResultCode nodeSetType(Node *node, const NodeType type);
+
+ResultCode nodeSetKey(Node *node, const String *key);
+
+ResultCode nodeSetData(Node *node, const String *data);
+
+ResultCode nodeErase(Node *root, const String *key);
 
 #endif
