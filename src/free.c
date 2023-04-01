@@ -23,7 +23,7 @@ int jsonDelete(Node **rootAddress, const String *key)
     Node *node = searchByKey(*rootAddress, key);
     if (node == NULL)
     {
-        printf("ERROR: cannot delete node. Key %s was not found.\n", stringGetBuffer(key));
+        printf("ERROR: cannot delete node. Key %s was not found.\n", string_cStr(key));
         return CODE_ERROR;
     }
 
@@ -32,7 +32,7 @@ int jsonDelete(Node **rootAddress, const String *key)
 
     if (parent == NULL)
     {
-        if (stringCompare(node->key, stringCreateFromLiteral("root")) == 0)
+        if (string_compare(node->key, string_createFromLiteral("root")) == 0)
         {
             // The user wants to delete the root tree.
             freeNode(*rootAddress);
@@ -51,7 +51,7 @@ int jsonDelete(Node **rootAddress, const String *key)
     size_t i;
     for (i = 0; i < vector_size(parentData); i++)
     {
-        if (stringCompare(((Node *)(vector_get(parentData, i)))->key, node->key) == 0)
+        if (string_compare(((Node *)(vector_get(parentData, i)))->key, node->key) == 0)
         {
             break;
         }

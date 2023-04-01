@@ -14,10 +14,10 @@ static ResultCode addBlanks(String *string, size_t number);
 ResultCode printToFile(const Node *root, const String *filename)
 {
     // Concatenate .json to the name of the file.
-    String *name = stringJoin(filename, stringCreateFromLiteral(".json"));
+    String *name = string_join(filename, string_createFromLiteral(".json"));
 
     // Open the file in write mode.
-    FILE *file = fopen(stringGetBuffer(name), "w");
+    FILE *file = fopen(string_cStr(name), "w");
     if (file == NULL)
     {
         printf("ERROR: Could not open a file to write to.\n");
@@ -42,7 +42,7 @@ ResultCode printToStdin(Node *root, const String *key)
         return CODE_ERROR;
     }
 
-    if (stringCompare(key, stringCreateFromLiteral("")) == 0)
+    if (string_compare(key, string_createFromLiteral("")) == 0)
     {
         // The user wants to print the root to stdin.
         return printNode(NULL, root, 0, 1);
@@ -53,7 +53,7 @@ ResultCode printToStdin(Node *root, const String *key)
         Node *parent = searchByKey(root, key);
         if (parent == NULL)
         {
-            printf("ERROR. Cannot print to stdin. Key %s was not found.\n", stringGetBuffer(key));
+            printf("ERROR. Cannot print to stdin. Key %s was not found.\n", string_cStr(key));
             return CODE_ERROR;
         }
 
@@ -79,41 +79,41 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
     }
 
     // Create a buffer for the line to be written.
-    String *buffer = stringCreate();
+    String *buffer = string_create();
 
     // Write the offset to the buffer.
     addBlanks(buffer, offset);
 
     // Write the key to the buffer if the node is not root.
-    if (stringCompare(node->key, stringCreateFromLiteral("root")) != 0)
+    if (string_compare(node->key, string_createFromLiteral("root")) != 0)
     {
-        stringCopy(buffer, stringCreateFromLiteral("\""));
-        stringCopy(buffer, node->key);
-        stringCopy(buffer, stringCreateFromLiteral("\": "));
+        string_copy(buffer, string_createFromLiteral("\""));
+        string_copy(buffer, node->key);
+        string_copy(buffer, string_createFromLiteral("\": "));
     }
 
     // Decide according to type.
     if (node->type == NODE_TYPE_NULL)
     {
-        stringCopy(buffer, stringCreateFromLiteral("null"));
+        string_copy(buffer, string_createFromLiteral("null"));
     }
     else if (node->type == NODE_TYPE_STRING)
     {
-        stringCopy(buffer, stringCreateFromLiteral("\""));
-        stringCopy(buffer, (String *)node->data);
-        stringCopy(buffer, stringCreateFromLiteral("\""));
+        string_copy(buffer, string_createFromLiteral("\""));
+        string_copy(buffer, (String *)node->data);
+        string_copy(buffer, string_createFromLiteral("\""));
     }
     else if (node->type == NODE_TYPE_NUMBER)
     {
         int number = *((int *)node->data);
         char numberBuffer[sizeof(char) * (int)log10(number)];
         snprintf(numberBuffer, sizeof(numberBuffer), "%d", number);
-        stringCopyFromBuffer(buffer, numberBuffer, strlen(numberBuffer));
+        string_copyFromBuffer(buffer, numberBuffer, strlen(numberBuffer));
     }
     else if (node->type == NODE_TYPE_BOOLEAN)
     {
         String *booleanString = booleanCodeToString(*((Boolean *)node->data));
-        stringCopy(buffer, booleanString);
+        string_copy(buffer, booleanString);
     }
     else if (node->type == NODE_TYPE_ARRAY)
     {
@@ -123,8 +123,8 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
     {
         // Open the object and write the current buffer contents as this is a
         // recursive function
-        stringCopy(buffer, stringCreateFromLiteral("{\n"));
-        fprintf(file, "%s", stringGetBuffer(buffer));
+        string_copy(buffer, string_createFromLiteral("{\n"));
+        fprintf(file, "%s", string_cStr(buffer));
 
         // Call this function recursively on its childs.
         Vector *children = (Vector *)node->data;
@@ -137,9 +137,9 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
         }
 
         // Write the last line that all object nodes finish with
-        stringFree(buffer);
+        string_free(buffer);
         addBlanks(buffer, offset);
-        stringCopy(buffer, stringCreateFromLiteral("}"));
+        string_copy(buffer, string_createFromLiteral("}"));
     }
     else
     {
@@ -149,9 +149,9 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
     // Print the buffer contents
     if (!isLast)
     {
-        stringCopy(buffer, stringCreateFromLiteral(","));
+        string_copy(buffer, string_createFromLiteral(","));
     }
-    fprintf(file, "%s\n", stringGetBuffer(buffer));
+    fprintf(file, "%s\n", string_cStr(buffer));
     return CODE_OK;
 }
 
@@ -161,6 +161,6 @@ static ResultCode addBlanks(String *string, size_t number)
 {
     char blanks[2 * number];
     memset(blanks, ' ', 2 * number);
-    stringCopyFromBuffer(string, blanks, 2 * number);
+    string_copyFromBuffer(string, blanks, 2 * number);
     return CODE_OK;
 }

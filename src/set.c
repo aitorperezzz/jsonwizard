@@ -29,26 +29,26 @@ ResultCode jsonModify(Node *root, const String *key, const String *field, const 
     Node *node = searchByKey(root, key);
     if (node == NULL)
     {
-        printf("ERROR: cannot modify node. Key %s was not found.\n", stringGetBuffer(key));
+        printf("ERROR: cannot modify node. Key %s was not found.\n", string_cStr(key));
         return CODE_ERROR;
     }
 
     // Decide based on the field.
-    if (stringCompare(field, stringCreateFromLiteral("type")) == 0)
+    if (string_compare(field, string_createFromLiteral("type")) == 0)
     {
         return setType(node, typeStringToCode(value));
     }
-    else if (stringCompare(field, stringCreateFromLiteral("key")) == 0)
+    else if (string_compare(field, string_createFromLiteral("key")) == 0)
     {
         return setKey(node, value);
     }
-    else if (stringCompare(field, stringCreateFromLiteral("data")) == 0)
+    else if (string_compare(field, string_createFromLiteral("data")) == 0)
     {
         return setData(node, value);
     }
     else
     {
-        printf("ERROR: cannot modify node. '%s' is not a valid field.\n", stringGetBuffer(field));
+        printf("ERROR: cannot modify node. '%s' is not a valid field.\n", string_cStr(field));
         return CODE_ERROR;
     }
 }
@@ -97,7 +97,7 @@ ResultCode setKey(Node *node, const String *key)
 
     // TODO: check the key is not already in use.
 
-    stringCopy(node->key, key);
+    string_copy(node->key, key);
     return CODE_OK;
 }
 
@@ -131,8 +131,8 @@ ResultCode setData(Node *node, const String *value)
         printf("ERROR: cannot modify data inside ARRAY and OBJECT nodes with setData.\n");
         return CODE_ERROR;
     case NODE_TYPE_STRING:
-        node->data = stringCreate();
-        stringCopy((String *)node->data, value);
+        node->data = string_create();
+        string_copy((String *)node->data, value);
         return CODE_OK;
     case NODE_TYPE_NUMBER:
         if (!isInteger(value))
@@ -140,13 +140,13 @@ ResultCode setData(Node *node, const String *value)
             printf("ERROR: cannot set data. Not a valid integer value.\n");
             return CODE_ERROR;
         }
-        *((int *)node->data) = atoi(stringGetBuffer(value));
+        *((int *)node->data) = atoi(string_cStr(value));
         return CODE_OK;
     case NODE_TYPE_BOOLEAN:;
         Boolean boolean = booleanStringToCode(value);
         if (boolean == BOOL_UNKNOWN)
         {
-            printf("ERROR: cannot set data. '%s' is not a valid boolean value.\n", stringGetBuffer(value));
+            printf("ERROR: cannot set data. '%s' is not a valid boolean value.\n", string_cStr(value));
             return CODE_ERROR;
         }
         *((Boolean *)node->data) = boolean;
@@ -159,9 +159,9 @@ ResultCode setData(Node *node, const String *value)
 // Receives a number as a string and checks if it is valid.
 static int isInteger(const String *string)
 {
-    for (size_t i = 0, n = stringGetLength(string); i < n; i++)
+    for (size_t i = 0, n = string_length(string); i < n; i++)
     {
-        if (!isdigit(stringGetChar(string, i)))
+        if (!isdigit(string_at(string, i)))
         {
             return 0;
         }
@@ -194,7 +194,7 @@ static ResultCode initializeData(Node *node)
         return CODE_OK;
     case NODE_TYPE_STRING:
         // Create space for a string and initialize it to empty.
-        node->data = stringCreate();
+        node->data = string_create();
         return CODE_OK;
     case NODE_TYPE_NUMBER:
         // Create space for an integer and store a zero.
@@ -254,17 +254,17 @@ int validateField(int field)
 // Gets the boolean as a string and returns its code.
 Boolean booleanStringToCode(const String *string)
 {
-    if (stringCompare(string, stringCreateFromLiteral("true")) == 0)
+    if (string_compare(string, string_createFromLiteral("true")) == 0)
     {
         return BOOL_TRUE;
     }
-    else if (stringCompare(string, stringCreateFromLiteral("false")) == 0)
+    else if (string_compare(string, string_createFromLiteral("false")) == 0)
     {
         return BOOL_FALSE;
     }
     else
     {
-        printf("ERROR. %s is not a valid boolean type.\n", stringGetBuffer(string));
+        printf("ERROR. %s is not a valid boolean type.\n", string_cStr(string));
         return BOOL_UNKNOWN;
     }
 }
@@ -276,9 +276,9 @@ String *booleanCodeToString(Boolean code)
     switch (code)
     {
     case BOOL_TRUE:
-        return stringCreateFromLiteral("true");
+        return string_createFromLiteral("true");
     case BOOL_FALSE:
-        return stringCreateFromLiteral("false");
+        return string_createFromLiteral("false");
     default:
         printf("ERROR: boolean code is not valid.\n");
         return NULL;
@@ -296,33 +296,33 @@ NodeType typeStringToCode(const String *string)
     }
 
     // Decide depending on the string.
-    if (stringCompare(string, stringCreateFromLiteral("null")) == 0)
+    if (string_compare(string, string_createFromLiteral("null")) == 0)
     {
         return NODE_TYPE_NULL;
     }
-    else if (stringCompare(string, stringCreateFromLiteral("string")) == 0)
+    else if (string_compare(string, string_createFromLiteral("string")) == 0)
     {
         return NODE_TYPE_STRING;
     }
-    else if (stringCompare(string, stringCreateFromLiteral("integer")) == 0)
+    else if (string_compare(string, string_createFromLiteral("integer")) == 0)
     {
         return NODE_TYPE_NUMBER;
     }
-    else if (stringCompare(string, stringCreateFromLiteral("boolean")) == 0)
+    else if (string_compare(string, string_createFromLiteral("boolean")) == 0)
     {
         return NODE_TYPE_BOOLEAN;
     }
-    else if (stringCompare(string, stringCreateFromLiteral("array")) == 0)
+    else if (string_compare(string, string_createFromLiteral("array")) == 0)
     {
         return NODE_TYPE_ARRAY;
     }
-    else if (stringCompare(string, stringCreateFromLiteral("object")) == 0)
+    else if (string_compare(string, string_createFromLiteral("object")) == 0)
     {
         return NODE_TYPE_OBJECT;
     }
     else
     {
-        printf("ERROR: could not convert string '%s' to a valid type.\n", stringGetBuffer(string));
+        printf("ERROR: could not convert string '%s' to a valid type.\n", string_cStr(string));
         return NODE_TYPE_NULL;
     }
 }

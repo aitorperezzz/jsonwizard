@@ -6,9 +6,9 @@
 
 #include "utils.h"
 
-static String *stringCreateNonInitialised();
+static String *string_createNonInitialised();
 
-String *stringCreateNonInitialised()
+String *string_createNonInitialised()
 {
     String *result = malloc(sizeof(String));
     if (result == NULL)
@@ -21,7 +21,7 @@ String *stringCreateNonInitialised()
     return result;
 }
 
-String *stringCreate(void)
+String *string_create(void)
 {
     // Reserve memory for the structure itself
     String *result = malloc(sizeof(String));
@@ -42,9 +42,9 @@ String *stringCreate(void)
     return result;
 }
 
-String *stringCreateFromLiteral(const char *literal)
+String *string_createFromLiteral(const char *literal)
 {
-    String *result = stringCreateNonInitialised();
+    String *result = string_createNonInitialised();
     const size_t originalLength = strlen(literal);
     void *tmp = malloc(originalLength + 1);
     if (tmp == NULL)
@@ -59,26 +59,26 @@ String *stringCreateFromLiteral(const char *literal)
     return result;
 }
 
-size_t stringGetLength(const String *string)
+size_t string_length(const String *string)
 {
     return string->length;
 }
 
-char stringGetChar(const String *string, const size_t index)
+char string_at(const String *string, const size_t index)
 {
     return string->buffer[index];
 }
 
-ResultCode stringCopy(String *destination, const String *origin)
+ResultCode string_copy(String *destination, const String *origin)
 {
     if (destination == NULL || origin == NULL)
     {
         return CODE_MEMORY_ERROR;
     }
-    return stringCopyFromBuffer(destination, origin->buffer, origin->length);
+    return string_copyFromBuffer(destination, origin->buffer, origin->length);
 }
 
-ResultCode stringCopyFromBuffer(String *destination, const char *origin, const size_t size)
+ResultCode string_copyFromBuffer(String *destination, const char *origin, const size_t size)
 {
     if (destination == NULL || origin == NULL)
     {
@@ -86,7 +86,7 @@ ResultCode stringCopyFromBuffer(String *destination, const char *origin, const s
     }
 
     // Reset the destination string
-    stringFree(destination);
+    string_free(destination);
 
     // Alloc memory for the buffer
     void *tmp = malloc(size + 1);
@@ -102,20 +102,20 @@ ResultCode stringCopyFromBuffer(String *destination, const char *origin, const s
     return CODE_OK;
 }
 
-int stringCompare(const String *string1, const String *string2)
+int string_compare(const String *string1, const String *string2)
 {
     if (string1 == NULL || string2 == NULL)
     {
         return -1;
     }
-    if (stringGetBuffer(string1) == NULL || stringGetBuffer(string2) == NULL)
+    if (string_cStr(string1) == NULL || string_cStr(string2) == NULL)
     {
         return -1;
     }
-    return strcmp(stringGetBuffer(string1), stringGetBuffer(string2));
+    return strcmp(string_cStr(string1), string_cStr(string2));
 }
 
-ResultCode stringJoinInPlace(String *string1, const String *string2)
+ResultCode string_joinInPlace(String *string1, const String *string2)
 {
     if (string1 == NULL || string2 == NULL)
     {
@@ -149,19 +149,19 @@ ResultCode stringJoinInPlace(String *string1, const String *string2)
     return CODE_OK;
 }
 
-String *stringJoin(const String *string1, const String *string2)
+String *string_join(const String *string1, const String *string2)
 {
     if (string1 == NULL || string2 == NULL)
     {
         return NULL;
     }
-    String *result = stringCreateNonInitialised();
-    stringCopyFromBuffer(result, string1->buffer, string1->length);
-    stringJoinInPlace(result, string2);
+    String *result = string_createNonInitialised();
+    string_copyFromBuffer(result, string1->buffer, string1->length);
+    string_joinInPlace(result, string2);
     return result;
 }
 
-ResultCode stringFree(void *string)
+ResultCode string_free(void *string)
 {
     if (string == NULL)
     {
@@ -178,7 +178,7 @@ ResultCode stringFree(void *string)
     return CODE_OK;
 }
 
-ResultCode stringReserve(String *string, const size_t capacity)
+ResultCode string_reserve(String *string, const size_t capacity)
 {
     if (string == NULL)
     {
@@ -200,7 +200,7 @@ ResultCode stringReserve(String *string, const size_t capacity)
     return CODE_OK;
 }
 
-const char *stringGetBuffer(const String *string)
+const char *string_cStr(const String *string)
 {
     return string->buffer;
 }

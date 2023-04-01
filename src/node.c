@@ -17,12 +17,12 @@ Node *nodeCreate(const String *name)
     // type
     result->type = NODE_TYPE_NULL;
     // key
-    result->key = stringCreate();
+    result->key = string_create();
     if (result->key == NULL)
     {
         return NULL;
     }
-    if (stringCopy(result->key, name) != CODE_OK)
+    if (string_copy(result->key, name) != CODE_OK)
     {
         return NULL;
     }
@@ -45,7 +45,7 @@ ResultCode nodeAppend(Node *node, const String *parent, const String *name)
     Node *parentNode = nodeGet(node, parent);
     if (parentNode == NULL)
     {
-        printf("Key %s does not exist in node with key %s", stringGetBuffer(parent), stringGetBuffer(node->key));
+        printf("Key %s does not exist in node with key %s", string_cStr(parent), string_cStr(node->key));
         return CODE_LOGIC_ERROR;
     }
 
@@ -86,7 +86,7 @@ Node *nodeGet(Node *root, const String *key)
 
     if (root->type != NODE_TYPE_OBJECT)
     {
-        if (stringCompare(root->key, key) == 0)
+        if (string_compare(root->key, key) == 0)
         {
             return root;
         }
@@ -137,7 +137,7 @@ ResultCode nodeSetKey(Node *node, const String *key)
         return CODE_MEMORY_ERROR;
     }
 
-    stringCopy(node->key, key);
+    string_copy(node->key, key);
     return CODE_OK;
 }
 
@@ -154,7 +154,7 @@ ResultCode nodeSetData(Node *node, const String *data)
         printf("Cannot set data on node of type null");
         return CODE_LOGIC_ERROR;
     case NODE_TYPE_STRING:
-        stringCopy(node->data, data);
+        string_copy(node->data, data);
         return CODE_OK;
     case NODE_TYPE_NUMBER:
     {
@@ -193,7 +193,7 @@ ResultCode nodeErase(Node *root, const String *key)
     Node *node = nodeGet(root, key);
     if (node == NULL)
     {
-        printf("Cannot erase. Node %s not found in %s", stringGetBuffer(key), stringGetBuffer(root->key));
+        printf("Cannot erase. Node %s not found in %s", string_cStr(key), string_cStr(root->key));
         return CODE_LOGIC_ERROR;
     }
 

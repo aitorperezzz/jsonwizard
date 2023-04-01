@@ -22,7 +22,7 @@ int main(int argc, char **argv)
     String *input = NULL;
 
     // Separately store the words of the last user command
-    Vector *words = vector_create(sizeof(String *), stringFree);
+    Vector *words = vector_create(sizeof(String *), string_free);
 
     // Create the root node of the tree
     Node *root = createRoot();
@@ -42,7 +42,7 @@ int main(int argc, char **argv)
         printf("\tjsonwizard> ");
 
         // Read all input provided by the user
-        stringFree(input);
+        string_free(input);
         input = readUserInput();
         if (input == NULL)
         {
@@ -95,13 +95,13 @@ ResultCode printHelp()
 
 String *readUserInput()
 {
-    String *input = stringCreate();
+    String *input = string_create();
     // Read in chunks of 256 characters until the \n character is found
     const size_t chunkSize = 256;
     size_t index = 0;
     do
     {
-        if (stringReserve(input, input->capacity + chunkSize) != CODE_OK)
+        if (string_reserve(input, input->capacity + chunkSize) != CODE_OK)
         {
             return NULL;
         }
@@ -129,12 +129,12 @@ ResultCode parseCommand(const String *input, Vector *words)
     // Counter for letters.
     size_t charBegin = 0;
 
-    for (size_t i = 0, n = stringGetLength(input); i < n; i++)
+    for (size_t i = 0, n = string_length(input); i < n; i++)
     {
         if (input->buffer[i] == ' ' || i == n - 1)
         {
-            String *newWord = stringCreate();
-            stringCopyFromBuffer(newWord, input->buffer + charBegin, i - charBegin);
+            String *newWord = string_create();
+            string_copyFromBuffer(newWord, input->buffer + charBegin, i - charBegin);
             vector_push(words, newWord);
             continue;
         }
@@ -216,7 +216,7 @@ Node *createRoot(void)
         return NULL;
     }
 
-    setKey(root, stringCreateFromLiteral("root"));
+    setKey(root, string_createFromLiteral("root"));
     setType(root, NODE_TYPE_OBJECT);
     return root;
 }
@@ -231,7 +231,7 @@ ResultCode initializeNode(Node *node)
     }
 
     node->type = NODE_TYPE_NULL;
-    node->key = stringCreateFromLiteral("");
+    node->key = string_createFromLiteral("");
     node->parent = NULL;
     node->data = NULL;
 
@@ -295,7 +295,7 @@ Node *searchByKey(Node *node, const String *key)
         return NULL;
     }
 
-    if (stringCompare(node->key, key) == 0)
+    if (string_compare(node->key, key) == 0)
     {
         // This node has the key.
         return node;

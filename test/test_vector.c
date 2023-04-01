@@ -11,7 +11,7 @@ static ResultCode noFree(void *data)
     return CODE_OK;
 }
 
-static ResultCode stringFree(void *data)
+static ResultCode string_free(void *data)
 {
     if (data == NULL)
     {
@@ -40,7 +40,7 @@ static Vector *createIntegerVector(void)
 
 static Vector *createStringVector(void)
 {
-    Vector *vector = vector_create(sizeof(char *), stringFree);
+    Vector *vector = vector_create(sizeof(char *), string_free);
     char *value;
     for (size_t i = 0; i < 10; i++)
     {
