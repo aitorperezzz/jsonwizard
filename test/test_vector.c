@@ -11,7 +11,22 @@ static ResultCode noFree(void *data)
     return CODE_OK;
 }
 
-static Vector *createFilledVector(void)
+static ResultCode stringFree(void *data)
+{
+    if (data == NULL)
+    {
+        return CODE_MEMORY_ERROR;
+    }
+    // The data pointed at is a char *
+    char **string = (char **)data;
+    if (*string != NULL)
+    {
+        free(*string);
+    }
+    return CODE_OK;
+}
+
+static Vector *createIntegerVector(void)
 {
     Vector *vector = vector_create(sizeof(int), noFree);
     int values[10];
@@ -19,6 +34,19 @@ static Vector *createFilledVector(void)
     {
         values[i] = i;
         assert_int_equal(vector_push(vector, &values[i]), CODE_OK);
+    }
+    return vector;
+}
+
+static Vector *createStringVector(void)
+{
+    Vector *vector = vector_create(sizeof(char *), stringFree);
+    char *value;
+    for (size_t i = 0; i < 10; i++)
+    {
+        value = malloc(sizeof(char) + 1);
+        sprintf(value, "%c", (char)(i + '0'));
+        assert_int_equal(vector_push(vector, &value), CODE_OK);
     }
     return vector;
 }
@@ -40,7 +68,7 @@ static void test_create(void **state)
 
 static void test_size(void **state)
 {
-    Vector *vector = createFilledVector();
+    Vector *vector = createIntegerVector();
     assert_int_equal(vector_size(vector), vector->size);
     assert_int_equal(vector_size(vector), 10);
     int number = 400;
@@ -85,7 +113,7 @@ static void test_push(void **state)
 
 static void test_clear(void **state)
 {
-    Vector *vector = createFilledVector();
+    Vector *vector = createIntegerVector();
     assert_int_equal(vector_clear(vector), CODE_OK);
     assert_int_equal(vector->size, 0);
     assert_int_equal(vector->capacity, 10);
@@ -103,11 +131,20 @@ static void test_clear(void **state)
 
 static void test_freeVector(void **state)
 {
+    // Vector of integers
+    Vector *integerVector = createIntegerVector();
+    assert_int_equal(vector_free(integerVector), CODE_OK);
+    free(integerVector);
+
+    // Vector of C strings
+    Vector *stringVector = createStringVector();
+    assert_int_equal(vector_free(stringVector), CODE_OK);
+    free(stringVector);
 }
 
 static void test_get(void **state)
 {
-    Vector *vector = createFilledVector();
+    Vector *vector = createIntegerVector();
     int *extracted = vector_get(vector, 5);
     assert_ptr_not_equal(extracted, NULL);
     assert_int_equal(*extracted, 5);
@@ -121,7 +158,7 @@ static void test_get(void **state)
 
 static void test_set(void **state)
 {
-    Vector *vector = createFilledVector();
+    Vector *vector = createIntegerVector();
     int modification = 257;
     assert_int_equal(vector_set(vector, 5, &modification), CODE_OK);
     int *inside = vector->data + 5 * sizeof(int);
@@ -139,7 +176,7 @@ static void test_begin(void **state)
 {
     Iterator begin;
 
-    Vector *vector = createFilledVector();
+    Vector *vector = createIntegerVector();
     begin = vector_begin(vector);
     assert_ptr_equal(begin.pointer, vector->data);
     assert_int_equal(begin.size, vector->elementSize);
@@ -163,7 +200,7 @@ static void test_end(void **state)
 {
     Iterator end;
 
-    Vector *vector = createFilledVector();
+    Vector *vector = createIntegerVector();
     end = vector_end(vector);
     assert_ptr_equal(end.pointer, vector->data + 10 * sizeof(int));
     assert_int_equal(end.size, vector->elementSize);
@@ -185,6 +222,50 @@ static void test_end(void **state)
 
 static void test_erase(void **state)
 {
+    Vector *vector = NULL;
+    Iterator first, last;
+
+    // Vector of integers
+    vector = createIntegerVector();
+    // Remove the element at index 1
+    first = iterator_increase(vector_begin(vector), 1);
+    last = iterator_increase(first, 1);
+    assert_int_equal(vector_erase(vector, first, last), CODE_OK);
+    assert_int_equal(vector->size, 9);
+    assert_int_equal(vector->capacity, 10);
+    int expectedInt = 0;
+    for (size_t i = 0; i < 9; i++)
+    {
+        if (i == 1)
+        {
+            expectedInt++;
+        }
+        assert_int_equal(*(int *)(vector->data + i * vector->elementSize), expectedInt);
+        expectedInt++;
+    }
+    assert_int_equal(vector_free(vector), CODE_OK);
+    free(vector);
+
+    // Vector of strings
+    vector = createStringVector();
+    // Remove the element at index 1
+    first = iterator_increase(vector_begin(vector), 1);
+    last = iterator_increase(first, 1);
+    assert_int_equal(vector_erase(vector, first, last), CODE_OK);
+    assert_int_equal(vector->size, 9);
+    assert_int_equal(vector->capacity, 10);
+    char expectedChar = '0';
+    for (size_t i = 0; i < 9; i++)
+    {
+        if (i == 1)
+        {
+            expectedChar++;
+        }
+        assert_int_equal(**(char **)(vector->data + i * vector->elementSize), expectedChar);
+        expectedChar++;
+    }
+    assert_int_equal(vector_free(vector), CODE_OK);
+    free(vector);
 }
 
 int main(void)

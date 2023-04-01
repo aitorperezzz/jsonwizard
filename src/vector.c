@@ -176,12 +176,13 @@ Iterator vector_end(const Vector *vector)
 
 ResultCode vector_erase(Vector *vector, Iterator first, Iterator last)
 {
-    if (first.pointer > last.pointer)
+    if (first.pointer >= last.pointer)
     {
         return CODE_OK;
     }
 
-    const size_t distance = iterator_distance(first, last);
+    Iterator end = vector_end(vector);
+    const size_t distance = iterator_distance(last, end);
     Iterator writeIterator = first;
     Iterator readIterator = last;
     for (size_t i = 0; i < distance; i++)
@@ -192,9 +193,10 @@ ResultCode vector_erase(Vector *vector, Iterator first, Iterator last)
         }
         memcpy(iterator_get(writeIterator), iterator_get(readIterator), vector->elementSize);
         memset(iterator_get(readIterator), '\0', vector->elementSize);
-        iterator_increase(readIterator, 1);
-        iterator_increase(writeIterator, 1);
+        readIterator = iterator_increase(readIterator, 1);
+        writeIterator = iterator_increase(writeIterator, 1);
     }
+    vector->size -= iterator_distance(first, last);
 
     return CODE_OK;
 }
