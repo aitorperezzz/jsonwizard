@@ -3,7 +3,7 @@
 
 #include "iterator.h"
 
-static Iterator iterator_invalidIterator(void)
+Iterator iterator_invalidIterator(void)
 {
     Iterator iterator;
     iterator.pointer = NULL;

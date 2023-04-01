@@ -5,6 +5,11 @@
 
 Vector *vector_create(const size_t elementSize, ResultCode (*freeCallback)(void *))
 {
+    if (freeCallback == NULL)
+    {
+        printf("Please provide a non-NULL callback function to free elements of vector\n");
+        return NULL;
+    }
     Vector *result = malloc(sizeof(Vector));
     if (result == NULL)
     {
@@ -20,15 +25,37 @@ Vector *vector_create(const size_t elementSize, ResultCode (*freeCallback)(void 
 
 size_t vector_size(const Vector *vector)
 {
+    if (vector == NULL)
+    {
+        printf("Attempt to get size of NULL vector\n");
+        return 0;
+    }
     return vector->size;
 }
 
 ResultCode vector_push(Vector *vector, const void *data)
 {
     // Initial checks
-    if (vector == NULL || data == NULL)
+    if (vector == NULL)
     {
+        printf("Cannot push to NULL vector\n");
         return CODE_MEMORY_ERROR;
+    }
+    if (data == NULL)
+    {
+        printf("Cannot push NULL data to vector\n");
+        return CODE_MEMORY_ERROR;
+    }
+
+    // Check if the buffer has not been allocated yet
+    if (vector->data == NULL)
+    {
+        vector->data = malloc(vector->elementSize);
+        if (vector->data == NULL)
+        {
+            return CODE_MEMORY_ERROR;
+        }
+        vector->capacity += 1;
     }
 
     // Check if more memory is needed
@@ -52,6 +79,11 @@ ResultCode vector_push(Vector *vector, const void *data)
 
 ResultCode vector_clear(Vector *vector)
 {
+    if (vector == NULL)
+    {
+        printf("Cannot clear a NULL vector\n");
+        return CODE_MEMORY_ERROR;
+    }
     // Free the memory in use at each index in the vector
     for (size_t i = 0, n = vector->size; i < n; i++)
     {
@@ -70,6 +102,11 @@ ResultCode vector_clear(Vector *vector)
 
 ResultCode vector_free(Vector *vector)
 {
+    if (vector == NULL)
+    {
+        printf("Cannot free a NULL vector\n");
+        return CODE_MEMORY_ERROR;
+    }
     if (vector_clear(vector) != CODE_OK)
     {
         return CODE_MEMORY_ERROR;
@@ -83,9 +120,14 @@ ResultCode vector_free(Vector *vector)
 
 void *vector_get(const Vector *vector, const size_t index)
 {
+    if (vector == NULL)
+    {
+        printf("Cannot get elements of NULL vector\n");
+        return NULL;
+    }
     if (index >= vector->size)
     {
-        printf("Cannot access element at index %lu", index);
+        printf("Cannot access element at index %lu\n", index);
         return NULL;
     }
     return vector->data + index * vector->elementSize;
@@ -93,23 +135,43 @@ void *vector_get(const Vector *vector, const size_t index)
 
 ResultCode vector_set(Vector *vector, const size_t index, const void *data)
 {
+    if (vector == NULL)
+    {
+        printf("Cannot set elements of NULL vector\n");
+        return CODE_MEMORY_ERROR;
+    }
+    if (data == NULL)
+    {
+        printf("Cannot set NULL data into vector\n");
+        return CODE_MEMORY_ERROR;
+    }
     if (index >= vector->size)
     {
-        printf("Cannot access element at index %lu", index);
+        printf("Cannot access element at index %lu\n", index);
         return CODE_LOGIC_ERROR;
     }
-    memcpy(vector_get(vector, index), data, vector->elementSize);
+    memcpy(vector->data + index * vector->elementSize, data, vector->elementSize);
     return CODE_OK;
 }
 
 Iterator vector_begin(const Vector *vector)
 {
-    return iterator_create(vector_get(vector, 0), vector->elementSize);
+    if (vector == NULL || vector->data == NULL)
+    {
+        printf("Cannot create begin iterator\n");
+        return iterator_invalidIterator();
+    }
+    return iterator_create(vector->data, vector->elementSize);
 }
 
 Iterator vector_end(const Vector *vector)
 {
-    return iterator_create(vector_get(vector, vector->size - 1) + vector->elementSize, vector->elementSize);
+    if (vector == NULL || vector->data == NULL)
+    {
+        printf("Cannot create end iterator\n");
+        return iterator_invalidIterator();
+    }
+    return iterator_create(vector->data + vector->size * vector->elementSize, vector->elementSize);
 }
 
 ResultCode vector_erase(Vector *vector, Iterator first, Iterator last)
