@@ -70,9 +70,9 @@ ResultCode stringJoinInPlace(String *string1, const String *string2);
 /// @return Resulting string
 String *stringJoin(const String *string1, const String *string2);
 
-/// @brief Resets the internal variables of the string, prior to call free() or to create a new one
+/// @brief Frees all the internal memory used by the string, prior to call free() or to create a new one
 /// @param string String structure
-void stringReset(String *string);
+ResultCode stringFree(void *string);
 
 /// @brief Reserve, ahead of time, a number of bytes for the string, to prevent many
 /// reallocations when the size of the final string is known

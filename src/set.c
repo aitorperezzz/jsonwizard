@@ -208,7 +208,7 @@ static ResultCode initializeData(Node *node)
         return CODE_OK;
     case NODE_TYPE_OBJECT:
         // Initialize an object data structure.
-        node->data = vectorCreate(VECTOR_TYPE_NODE);
+        node->data = vector_create(sizeof(Node *), nodeFree);
         return CODE_OK;
     case NODE_TYPE_ARRAY:
         // TODO: reset data in an array node.

@@ -129,15 +129,15 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
         // Call this function recursively on its childs.
         Vector *children = (Vector *)node->data;
         int newLast;
-        const size_t size = vectorSize(children);
+        const size_t size = vector_size(children);
         for (size_t i = 0; i < size; i++)
         {
             newLast = i == size - 1 ? 1 : 0;
-            printNode(file, vectorGet(children, i), offset + 1, newLast);
+            printNode(file, vector_get(children, i), offset + 1, newLast);
         }
 
         // Write the last line that all object nodes finish with
-        stringReset(buffer);
+        stringFree(buffer);
         addBlanks(buffer, offset);
         stringCopy(buffer, stringCreateFromLiteral("}"));
     }

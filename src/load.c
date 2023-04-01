@@ -281,7 +281,7 @@ static Node *parseNode(const String *string)
 
                 // Add the new node to the child array.
                 newNode->parent = node;
-                vectorPush(data, newNode, sizeof(newNode));
+                vector_push(data, newNode);
 
                 // Prepare for the next node.
                 pointer = pointer + childSize;

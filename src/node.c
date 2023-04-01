@@ -5,7 +5,6 @@
 #include "vector.h"
 #include "parse.h"
 
-static ResultCode nodeReset(Node *node);
 static ResultCode nodeInitialise(Node *node);
 
 Node *nodeCreate(const String *name)
@@ -70,7 +69,7 @@ ResultCode nodeAppend(Node *node, const String *parent, const String *name)
     {
         return CODE_MEMORY_ERROR;
     }
-    if (vectorPush(objects, &child, sizeof(child)) != CODE_OK)
+    if (vector_push(objects, &child) != CODE_OK)
     {
         return CODE_ERROR;
     }
@@ -100,9 +99,9 @@ Node *nodeGet(Node *root, const String *key)
     // This is an object node, so iterate over all its nodes and look recursively
     Vector *objects = (Vector *)root->data;
     Node *current = NULL;
-    for (size_t i = 0, n = vectorSize(objects); i < n; i++)
+    for (size_t i = 0, n = vector_size(objects); i < n; i++)
     {
-        current = nodeGet(vectorGet(objects, i), key);
+        current = nodeGet(vector_get(objects, i), key);
         if (current != NULL)
         {
             return current;
@@ -114,7 +113,7 @@ Node *nodeGet(Node *root, const String *key)
 ResultCode nodeSetType(Node *node, const NodeType type)
 {
     // First reset the node
-    if (nodeReset(node) != CODE_OK)
+    if (nodeFree(node) != CODE_OK)
     {
         return CODE_ERROR;
     }
@@ -207,18 +206,18 @@ ResultCode nodeErase(Node *root, const String *key)
 
     // Check if we can find it among the children
     Vector *objects = (Vector *)parent->data;
-    size_t index;
-    if (vectorFind(objects, &node, sizeof(node), &index) != CODE_OK)
+    Iterator found = iterator_find(vector_begin(objects), vector_end(objects), &node);
+    if (iterator_equal(found, vector_end(objects)))
     {
-        return CODE_LOGIC_ERROR;
+        return CODE_OK;
     }
 
     // Free the contents themselves, then remove the element from the list
-    if (nodeReset(node) != CODE_OK)
+    if (nodeFree(node) != CODE_OK)
     {
         return CODE_MEMORY_ERROR;
     }
-    if (vectorErase(objects, index) != CODE_OK)
+    if (vector_erase(objects, found, iterator_increase(found, 1)) != CODE_OK)
     {
         return CODE_LOGIC_ERROR;
     }
@@ -226,7 +225,7 @@ ResultCode nodeErase(Node *root, const String *key)
     return CODE_OK;
 }
 
-static ResultCode nodeReset(Node *node)
+ResultCode nodeFree(void *node)
 {
     return CODE_NOT_SUPPORTED;
 }

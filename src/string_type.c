@@ -86,7 +86,7 @@ ResultCode stringCopyFromBuffer(String *destination, const char *origin, const s
     }
 
     // Reset the destination string
-    stringReset(destination);
+    stringFree(destination);
 
     // Alloc memory for the buffer
     void *tmp = malloc(size + 1);
@@ -161,19 +161,21 @@ String *stringJoin(const String *string1, const String *string2)
     return result;
 }
 
-void stringReset(String *string)
+ResultCode stringFree(void *string)
 {
     if (string == NULL)
     {
-        return;
+        return CODE_MEMORY_ERROR;
     }
-    if (string->buffer != NULL)
+    String *mystring = (String *)string;
+    if (mystring->buffer != NULL)
     {
-        free(string->buffer);
+        free(mystring->buffer);
     }
-    string->buffer = NULL;
-    string->length = 0;
-    string->capacity = 0;
+    mystring->buffer = NULL;
+    mystring->length = 0;
+    mystring->capacity = 0;
+    return CODE_OK;
 }
 
 ResultCode stringReserve(String *string, const size_t capacity)

@@ -46,4 +46,6 @@ ResultCode nodeSetData(Node *node, const String *data);
 
 ResultCode nodeErase(Node *root, const String *key);
 
+ResultCode nodeFree(void *free);
+
 #endif

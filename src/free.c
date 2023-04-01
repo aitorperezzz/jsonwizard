@@ -49,21 +49,22 @@ int jsonDelete(Node **rootAddress, const String *key)
     // Search the position of this node in the parent's childs.
     Vector *parentData = (Vector *)parent->data;
     size_t i;
-    for (i = 0; i < vectorSize(parentData); i++)
+    for (i = 0; i < vector_size(parentData); i++)
     {
-        if (stringCompare(((Node *)(vectorGet(parentData, i)))->key, node->key) == 0)
+        if (stringCompare(((Node *)(vector_get(parentData, i)))->key, node->key) == 0)
         {
             break;
         }
     }
-    if (i == vectorSize(parentData))
+    if (i == vector_size(parentData))
     {
         printf("ERROR: could not delete node. Index of child not found.\n");
         return CODE_ERROR;
     }
 
     // Erase the i-th element in the vector
-    vectorErase(parentData, i);
+    Iterator iterator = vector_begin(parentData);
+    vector_erase(parentData, iterator_increase(iterator, i), iterator_increase(iterator, i + 1));
     freeNode(node);
 
     return CODE_OK;
@@ -76,7 +77,7 @@ int jsonQuit(Node *root, Vector *words)
     freeNode(root);
 
     // Free the command buffer.
-    vectorFree(words);
+    vector_free(words);
 
     return -1;
 }
@@ -113,9 +114,9 @@ int freeData(Node *node)
         // Free the child objects.
         ;
         Vector *data = (Vector *)node->data;
-        for (size_t i = 0; i < vectorSize(data); i++)
+        for (size_t i = 0; i < vector_size(data); i++)
         {
-            freeNode((Node *)vectorGet(data, i));
+            freeNode((Node *)vector_get(data, i));
         }
 
         // Free the object data structure itself.

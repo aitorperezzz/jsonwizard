@@ -13,7 +13,7 @@ static void testCreate(void **state)
     assert_int_equal(strlen(string->buffer), expectedLength);
     assert_int_equal(string->length, expectedLength);
     assert_int_equal(string->capacity, expectedLength + 1);
-    stringReset(string);
+    stringFree(string);
     free(string);
 }
 
@@ -26,7 +26,7 @@ static void testCreateFromLiteral(void **state)
     assert_int_equal(strlen(string->buffer), expectedLength);
     assert_int_equal(string->length, expectedLength);
     assert_int_equal(string->capacity, expectedLength + 1);
-    stringReset(string);
+    stringFree(string);
     free(string);
 }
 
@@ -36,7 +36,7 @@ static void testGetLength(void **state)
     const size_t expectedLength = strlen(literal);
     String *string = stringCreateFromLiteral(literal);
     assert_int_equal(stringGetLength(string), expectedLength);
-    stringReset(string);
+    stringFree(string);
     free(string);
 }
 
@@ -45,7 +45,7 @@ static void testGetBuffer(void **state)
     const char *literal = "My literal string";
     String *string = stringCreateFromLiteral(literal);
     assert_int_equal(stringGetBuffer(string), string->buffer);
-    stringReset(string);
+    stringFree(string);
     free(string);
 }
 
@@ -56,7 +56,7 @@ static void testGetChar(void **state)
     const char expectedChar = literal[index];
     String *string = stringCreateFromLiteral(literal);
     assert_int_equal((int)stringGetChar(string, index), (int)expectedChar);
-    stringReset(string);
+    stringFree(string);
     free(string);
 }
 
@@ -73,8 +73,8 @@ static void testCopy(void **state)
     assert_string_equal(string2->buffer, string1->buffer);
     assert_int_equal(string2->length, string1->length);
     assert_int_equal(string2->capacity, string1->capacity);
-    stringReset(string1);
-    stringReset(string2);
+    stringFree(string1);
+    stringFree(string2);
     free(string1);
     free(string2);
 
@@ -83,8 +83,8 @@ static void testCopy(void **state)
     string2 = stringCreate();
     result = stringCopy(string1, string2);
     assert_int_equal(result, CODE_MEMORY_ERROR);
-    stringReset(string1);
-    stringReset(string2);
+    stringFree(string1);
+    stringFree(string2);
     free(string1);
     free(string2);
 
@@ -93,8 +93,8 @@ static void testCopy(void **state)
     string2 = NULL;
     result = stringCopy(string1, string2);
     assert_int_equal(result, CODE_MEMORY_ERROR);
-    stringReset(string1);
-    stringReset(string2);
+    stringFree(string1);
+    stringFree(string2);
     free(string1);
     free(string2);
 }
@@ -112,8 +112,8 @@ static void testCopyFromBuffer(void **state)
     assert_string_equal(string2->buffer, string1->buffer);
     assert_int_equal(string2->length, string1->length);
     assert_int_equal(string2->capacity, string1->capacity);
-    stringReset(string1);
-    stringReset(string2);
+    stringFree(string1);
+    stringFree(string2);
     free(string1);
     free(string2);
 
@@ -122,8 +122,8 @@ static void testCopyFromBuffer(void **state)
     string2 = stringCreate();
     result = stringCopyFromBuffer(string1, string2->buffer, string2->length);
     assert_int_equal(result, CODE_MEMORY_ERROR);
-    stringReset(string1);
-    stringReset(string2);
+    stringFree(string1);
+    stringFree(string2);
     free(string1);
     free(string2);
 }
@@ -137,8 +137,8 @@ static void testCompare(void **state)
     string2 = stringCreate();
     result = stringCompare(string1, string2);
     assert_int_not_equal(result, 0);
-    stringReset(string1);
-    stringReset(string2);
+    stringFree(string1);
+    stringFree(string2);
     free(string1);
     free(string2);
 
@@ -147,8 +147,8 @@ static void testCompare(void **state)
     string2 = stringCreateFromLiteral("My literal string");
     result = stringCompare(string1, string2);
     assert_int_equal(result, 0);
-    stringReset(string1);
-    stringReset(string2);
+    stringFree(string1);
+    stringFree(string2);
     free(string1);
     free(string2);
 
@@ -157,8 +157,8 @@ static void testCompare(void **state)
     string2 = stringCreate();
     result = stringCompare(string1, string2);
     assert_int_not_equal(result, 0);
-    stringReset(string1);
-    stringReset(string2);
+    stringFree(string1);
+    stringFree(string2);
     free(string1);
     free(string2);
 }
@@ -174,8 +174,8 @@ static void testJoinInPlace(void **state)
     result = stringJoinInPlace(string1, string2);
     assert_int_equal(result, CODE_OK);
     assert_string_equal(string1->buffer, "string1string2");
-    stringReset(string1);
-    stringReset(string2);
+    stringFree(string1);
+    stringFree(string2);
     free(string1);
     free(string2);
 
@@ -185,8 +185,8 @@ static void testJoinInPlace(void **state)
     result = stringJoinInPlace(string1, string2);
     assert_int_equal(result, CODE_OK);
     assert_string_equal(string1->buffer, "string2");
-    stringReset(string1);
-    stringReset(string2);
+    stringFree(string1);
+    stringFree(string2);
     free(string1);
     free(string2);
 
@@ -196,8 +196,8 @@ static void testJoinInPlace(void **state)
     result = stringJoinInPlace(string1, string2);
     assert_int_equal(result, CODE_OK);
     assert_string_equal(string1->buffer, "string1");
-    stringReset(string1);
-    stringReset(string2);
+    stringFree(string1);
+    stringFree(string2);
     free(string1);
     free(string2);
 
@@ -207,8 +207,8 @@ static void testJoinInPlace(void **state)
     result = stringJoinInPlace(string1, string2);
     assert_int_equal(result, CODE_OK);
     assert_string_equal(string1->buffer, "");
-    stringReset(string1);
-    stringReset(string2);
+    stringFree(string1);
+    stringFree(string2);
     free(string1);
     free(string2);
 }
@@ -222,9 +222,9 @@ static void testJoin(void **state)
     string2 = stringCreateFromLiteral("string2");
     result = stringJoin(string1, string2);
     assert_string_equal(result->buffer, "string1string2");
-    stringReset(string1);
-    stringReset(string2);
-    stringReset(result);
+    stringFree(string1);
+    stringFree(string2);
+    stringFree(result);
     free(string1);
     free(string2);
     free(result);
@@ -234,9 +234,9 @@ static void testJoin(void **state)
     string2 = stringCreateFromLiteral("string2");
     result = stringJoin(string1, string2);
     assert_string_equal(result->buffer, "string2");
-    stringReset(string1);
-    stringReset(string2);
-    stringReset(result);
+    stringFree(string1);
+    stringFree(string2);
+    stringFree(result);
     free(string1);
     free(string2);
     free(result);
@@ -246,9 +246,9 @@ static void testJoin(void **state)
     string2 = stringCreate();
     result = stringJoin(string1, string2);
     assert_string_equal(result->buffer, "string1");
-    stringReset(string1);
-    stringReset(string2);
-    stringReset(result);
+    stringFree(string1);
+    stringFree(string2);
+    stringFree(result);
     free(string1);
     free(string2);
     free(result);
@@ -258,9 +258,9 @@ static void testJoin(void **state)
     string2 = stringCreate();
     result = stringJoin(string1, string2);
     assert_string_equal(result->buffer, "");
-    stringReset(string1);
-    stringReset(string2);
-    stringReset(result);
+    stringFree(string1);
+    stringFree(string2);
+    stringFree(result);
     free(string1);
     free(string2);
     free(result);

@@ -22,7 +22,7 @@ int main(int argc, char **argv)
     String *input = NULL;
 
     // Separately store the words of the last user command
-    Vector *words = vectorCreate(VECTOR_TYPE_STRING);
+    Vector *words = vector_create(sizeof(String *), stringFree);
 
     // Create the root node of the tree
     Node *root = createRoot();
@@ -42,7 +42,7 @@ int main(int argc, char **argv)
         printf("\tjsonwizard> ");
 
         // Read all input provided by the user
-        stringReset(input);
+        stringFree(input);
         input = readUserInput();
         if (input == NULL)
         {
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
         }
 
         // Parse input into words
-        if (vectorClear(words) != CODE_OK)
+        if (vector_clear(words) != CODE_OK)
         {
             printf("Could not clear last user command");
             return -1;
@@ -135,7 +135,7 @@ ResultCode parseCommand(const String *input, Vector *words)
         {
             String *newWord = stringCreate();
             stringCopyFromBuffer(newWord, input->buffer + charBegin, i - charBegin);
-            vectorPush(words, (void *)newWord, sizeof(newWord));
+            vector_push(words, newWord);
             continue;
         }
     }
@@ -145,37 +145,37 @@ ResultCode parseCommand(const String *input, Vector *words)
 // Execute the command.
 ResultCode executeCommand(const Vector *command, Node **rootAddress)
 {
-    if (strcmp(vectorGet(command, 0), "append") == 0)
+    if (strcmp(vector_get(command, 0), "append") == 0)
     {
         // Structure: append <child key> to <parent key>.
-        return jsonAppend(rootAddress, vectorGet(command, 3), vectorGet(command, 1));
+        return jsonAppend(rootAddress, vector_get(command, 3), vector_get(command, 1));
     }
-    else if (strcmp(vectorGet(command, 0), "modify") == 0)
+    else if (strcmp(vector_get(command, 0), "modify") == 0)
     {
         // Structure: modify <key> set <field> <value>.
-        return jsonModify(*rootAddress, vectorGet(command, 1), vectorGet(command, 3), vectorGet(command, 4));
+        return jsonModify(*rootAddress, vector_get(command, 1), vector_get(command, 3), vector_get(command, 4));
     }
-    else if (strcmp(vectorGet(command, 0), "delete") == 0)
+    else if (strcmp(vector_get(command, 0), "delete") == 0)
     {
         // Structure: delete [<key>].
-        return jsonDelete(rootAddress, vectorGet(command, 1));
+        return jsonDelete(rootAddress, vector_get(command, 1));
     }
-    else if (strcmp(vectorGet(command, 0), "write") == 0)
+    else if (strcmp(vector_get(command, 0), "write") == 0)
     {
         // Structure: write <filename>
-        return printToFile(*rootAddress, vectorGet(command, 1));
+        return printToFile(*rootAddress, vector_get(command, 1));
     }
-    else if (strcmp(vectorGet(command, 0), "print") == 0)
+    else if (strcmp(vector_get(command, 0), "print") == 0)
     {
         // Structure: print [<key>].
-        return printToStdin(*rootAddress, vectorGet(command, 1));
+        return printToStdin(*rootAddress, vector_get(command, 1));
     }
-    else if (strcmp(vectorGet(command, 0), "load") == 0)
+    else if (strcmp(vector_get(command, 0), "load") == 0)
     {
         // Structure: load <filename>.
-        return jsonLoad(rootAddress, vectorGet(command, 1));
+        return jsonLoad(rootAddress, vector_get(command, 1));
     }
-    else if (strcmp(vectorGet(command, 0), "help") == 0)
+    else if (strcmp(vector_get(command, 0), "help") == 0)
     {
         return printHelp();
     }
@@ -279,7 +279,7 @@ ResultCode jsonAppend(Node **rootAddress, const String *parentKey, const String 
     setKey(newNode, childKey);
 
     // Link the parent to the child.
-    vectorPush((Vector *)parent->data, newNode, sizeof(newNode));
+    vector_push((Vector *)parent->data, newNode);
     newNode->parent = parent;
 
     return CODE_OK;
@@ -305,9 +305,9 @@ Node *searchByKey(Node *node, const String *key)
         // Look recursively in this case.
         Node *result;
         Vector *data = (Vector *)node->data;
-        for (size_t i = 0, n = vectorSize(data); i < n; i++)
+        for (size_t i = 0, n = vector_size(data); i < n; i++)
         {
-            Node *element = (Node *)vectorGet(data, i);
+            Node *element = (Node *)vector_get(data, i);
             if (element != NULL)
             {
                 result = searchByKey(element, key);
