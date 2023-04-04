@@ -65,7 +65,7 @@ static void test_find(void **state)
     int origin2[3];
     for (int i = 0; i < 3; i++)
     {
-        origin[i] = i + 6;
+        origin2[i] = i + 6;
     }
     // Find and check the result
     Iterator first2 = iterator_create(origin2, sizeof(int));

@@ -44,8 +44,9 @@ static Vector *createStringVector(void)
     char *value;
     for (size_t i = 0; i < 10; i++)
     {
-        value = malloc(sizeof(char) + 1);
-        sprintf(value, "%c", (char)(i + '0'));
+        const size_t length = sizeof(char) + 1;
+        value = malloc(length);
+        snprintf(value, length, "%c", (char)(i + '0'));
         assert_int_equal(vector_push(vector, &value), CODE_OK);
     }
     return vector;
