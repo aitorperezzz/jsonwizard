@@ -1,0 +1,14 @@
+{
+    "files.exclude": {
+        "**/*.d": true,
+        "**/*.dSYM": true,
+        "**/*.o": true,
+        "jsonwizard": true,
+        "test/test_iterator": true,
+        "test/test_string_type": true,
+        "test/test_vector": true
+    },
+    "C_Cpp.default.includePath": [
+        "src"
+    ]
+}

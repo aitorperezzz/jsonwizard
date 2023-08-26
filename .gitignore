@@ -1,7 +1,6 @@
 **/**.d
 **/**.o
 jsonwizard
-.vscode
 .DS_Store
 test/*
 !test/*.c

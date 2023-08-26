@@ -23,6 +23,10 @@ TARGET=jsonwizard
 all: $(TARGET)
 
 test: $(OBJECTS) $(OBJECTS_TEST)
+	cd test ; \
+	./test_string_type ; \
+	./test_iterator ; \
+	#./test_vector
 
 -include $(DEPENDS)
 
