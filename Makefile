@@ -26,7 +26,7 @@ test: $(OBJECTS) $(OBJECTS_TEST)
 	cd test ; \
 	./test_string_type ; \
 	./test_iterator ; \
-	#./test_vector
+	./test_vector
 
 -include $(DEPENDS)
 

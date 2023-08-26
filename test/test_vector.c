@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <setjmp.h>
 #include <cmocka.h>
+#include <assert.h>
 
 #include "vector.c"
 #include "iterator.c"
@@ -59,7 +60,7 @@ static void test_create(void **state)
     assert_int_equal(vector->size, 0);
     assert_int_equal(vector->capacity, 0);
     assert_int_equal(vector->elementSize, sizeof(int));
-    assert_ptr_equal(vector->freeCallback, noFree);
+    assert(vector->freeCallback == noFree);
     assert_int_equal(vector_free(vector), CODE_OK);
     free(vector);
 
