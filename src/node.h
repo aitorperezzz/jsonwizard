@@ -2,6 +2,7 @@
 #define NODE_H
 
 #include "string_type.h"
+#include "iterator.h"
 
 /// @brief Types of nodes
 typedef enum
