@@ -10,5 +10,8 @@
     },
     "C_Cpp.default.includePath": [
         "src"
-    ]
+    ],
+    "files.associations": {
+        "vector.h": "c"
+    }
 }

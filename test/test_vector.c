@@ -147,15 +147,15 @@ static void test_freeVector(void **state)
 static void test_get(void **state)
 {
     Vector *vector = createIntegerVector();
-    int *extracted = vector_get(vector, 5);
+    int *extracted = vector_at(vector, 5);
     assert_ptr_not_equal(extracted, NULL);
     assert_int_equal(*extracted, 5);
-    assert_ptr_equal(vector_get(vector, 10), NULL);
+    assert_ptr_equal(vector_at(vector, 10), NULL);
     assert_int_equal(vector_free(vector), CODE_OK);
     free(vector);
 
     vector = NULL;
-    assert_int_equal(vector_get(vector, 0), NULL);
+    assert_int_equal(vector_at(vector, 0), NULL);
 }
 
 static void test_set(void **state)

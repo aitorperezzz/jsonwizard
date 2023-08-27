@@ -8,7 +8,6 @@
 #include "print.h"
 #include "load.h"
 #include "set.h"
-#include "free.h"
 #include "string_type.h"
 #include "node.h"
 #include "vector.h"
@@ -133,8 +132,7 @@ ResultCode parseCommand(const String *input, Vector *words)
     {
         if (input->buffer[i] == ' ' || i == n - 1)
         {
-            String *newWord = string_create();
-            string_copyFromBuffer(newWord, input->buffer + charBegin, i - charBegin);
+            String *newWord = string_copyFromBuffer(input->buffer + charBegin, i - charBegin);
             vector_push(words, newWord);
             continue;
         }
@@ -145,37 +143,45 @@ ResultCode parseCommand(const String *input, Vector *words)
 // Execute the command.
 ResultCode executeCommand(const Vector *command, Node **rootAddress)
 {
-    if (strcmp(vector_get(command, 0), "append") == 0)
+    if (strcmp(vector_at(command, 0), "append") == 0)
     {
         // Structure: append <child key> to <parent key>.
-        return jsonAppend(rootAddress, vector_get(command, 3), vector_get(command, 1));
+        return jsonAppend(rootAddress, vector_at(command, 3), vector_at(command, 1));
     }
-    else if (strcmp(vector_get(command, 0), "modify") == 0)
+    else if (strcmp(vector_at(command, 0), "modify") == 0)
     {
         // Structure: modify <key> set <field> <value>.
-        return jsonModify(*rootAddress, vector_get(command, 1), vector_get(command, 3), vector_get(command, 4));
+        return jsonModify(*rootAddress, vector_at(command, 1), vector_at(command, 3), vector_at(command, 4));
     }
-    else if (strcmp(vector_get(command, 0), "delete") == 0)
+    else if (strcmp(vector_at(command, 0), "delete") == 0)
     {
         // Structure: delete [<key>].
-        return jsonDelete(rootAddress, vector_get(command, 1));
+        String *key = vector_at(command, 1);
+        Node *node = node_get(*rootAddress, key);
+        if (!node)
+        {
+            return CODE_LOGIC_ERROR;
+        }
+        return node_erase(node->parent, key);
     }
-    else if (strcmp(vector_get(command, 0), "write") == 0)
+    else if (strcmp(vector_at(command, 0), "write") == 0)
     {
         // Structure: write <filename>
-        return printToFile(*rootAddress, vector_get(command, 1));
+        return print_to_file(*rootAddress, vector_at(command, 1));
     }
-    else if (strcmp(vector_get(command, 0), "print") == 0)
+    else if (strcmp(vector_at(command, 0), "print") == 0)
     {
         // Structure: print [<key>].
-        return printToStdin(*rootAddress, vector_get(command, 1));
+        String *key = vector_at(command, 1);
+        Node *node = node_get(*rootAddress, key);
+        return print_to_stdout(node);
     }
-    else if (strcmp(vector_get(command, 0), "load") == 0)
+    else if (strcmp(vector_at(command, 0), "load") == 0)
     {
         // Structure: load <filename>.
-        return jsonLoad(rootAddress, vector_get(command, 1));
+        return jsonLoad(rootAddress, vector_at(command, 1));
     }
-    else if (strcmp(vector_get(command, 0), "help") == 0)
+    else if (strcmp(vector_at(command, 0), "help") == 0)
     {
         return printHelp();
     }
@@ -231,7 +237,6 @@ ResultCode initializeNode(Node *node)
     }
 
     node->type = NODE_TYPE_NULL;
-    node->key = string_createFromLiteral("");
     node->parent = NULL;
     node->data = NULL;
 
@@ -250,7 +255,7 @@ ResultCode jsonAppend(Node **rootAddress, const String *parentKey, const String 
     }
 
     // Try to find the parent node.
-    Node *parent = searchByKey(root, parentKey);
+    Node *parent = node_get(root, parentKey);
     if (parent == NULL)
     {
         printf("ERROR: could not find the parent key in the root node.\n");
@@ -283,48 +288,4 @@ ResultCode jsonAppend(Node **rootAddress, const String *parentKey, const String 
     newNode->parent = parent;
 
     return CODE_OK;
-}
-
-// Tries to find, recursively, a node with the specified key.
-// If found, returns a pointer to that node.
-Node *searchByKey(Node *node, const String *key)
-{
-    if (node == NULL)
-    {
-        printf("ERROR: cannot find key in NULL node.\n");
-        return NULL;
-    }
-
-    if (string_compare(node->key, key) == 0)
-    {
-        // This node has the key.
-        return node;
-    }
-    else if (node->type == NODE_TYPE_OBJECT)
-    {
-        // Look recursively in this case.
-        Node *result;
-        Vector *data = (Vector *)node->data;
-        for (size_t i = 0, n = vector_size(data); i < n; i++)
-        {
-            Node *element = (Node *)vector_get(data, i);
-            if (element != NULL)
-            {
-                result = searchByKey(element, key);
-                if (result != NULL)
-                {
-                    return result;
-                }
-            }
-        }
-
-        // I have searched inside this object and the key was not found.
-        return NULL;
-    }
-    else
-    {
-        // This node does not have the key and is not
-        // a searchable node.
-        return NULL;
-    }
 }

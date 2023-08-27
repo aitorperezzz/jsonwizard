@@ -19,7 +19,4 @@ ResultCode initializeNode(Node *);
 // Append.
 ResultCode jsonAppend(Node **rootAddress, const String *parentKey, const String *childKey);
 
-// Search the tree given the key.
-Node *searchByKey(Node *node, const String *key);
-
 #endif

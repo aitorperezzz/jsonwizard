@@ -12,7 +12,6 @@ ResultCode setData(Node *node, const String *value);
 
 // Validation and manipulation of basic types.
 int validateType(NodeType type);
-int validateField(int);
 Boolean booleanStringToCode(const String *string);
 String *booleanCodeToString(Boolean code);
 NodeType typeStringToCode(const String *string);

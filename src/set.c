@@ -7,8 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "free.h"
-
 // Prototypes of static functions.
 static int isInteger(const String *string);
 static ResultCode initializeData(Node *node);
@@ -26,7 +24,7 @@ ResultCode jsonModify(Node *root, const String *key, const String *field, const 
     }
 
     // Try to find the relevant node.
-    Node *node = searchByKey(root, key);
+    Node *node = node_get(root, key);
     if (node == NULL)
     {
         printf("ERROR: cannot modify node. Key %s was not found.\n", string_cStr(key));
@@ -71,7 +69,7 @@ ResultCode setType(Node *node, NodeType type)
     }
 
     // First free the data of the node.
-    freeData(node);
+    // freeData(node);
 
     // Set the new type and initialize.
     node->type = type;
@@ -97,7 +95,7 @@ ResultCode setKey(Node *node, const String *key)
 
     // TODO: check the key is not already in use.
 
-    string_copy(node->key, key);
+    // node->key = string_copy(key);
     return CODE_OK;
 }
 
@@ -131,8 +129,7 @@ ResultCode setData(Node *node, const String *value)
         printf("ERROR: cannot modify data inside ARRAY and OBJECT nodes with setData.\n");
         return CODE_ERROR;
     case NODE_TYPE_STRING:
-        node->data = string_create();
-        string_copy((String *)node->data, value);
+        node->data = string_copy(value);
         return CODE_OK;
     case NODE_TYPE_NUMBER:
         if (!isInteger(value))
@@ -208,7 +205,7 @@ static ResultCode initializeData(Node *node)
         return CODE_OK;
     case NODE_TYPE_OBJECT:
         // Initialize an object data structure.
-        node->data = vector_create(sizeof(Node *), nodeFree);
+        node->data = vector_create(sizeof(Node *), &node_free_raw);
         return CODE_OK;
     case NODE_TYPE_ARRAY:
         // TODO: reset data in an array node.
@@ -233,21 +230,6 @@ int validateType(NodeType type)
         return 1;
     default:
         return 0;
-    }
-}
-
-// Receives a field code and validates it.
-int validateField(int field)
-{
-    switch (field)
-    {
-    case FIELD_TYPE:
-    case FIELD_KEY:
-    case FIELD_PARENT:
-    case FIELD_DATA:
-        return CODE_OK;
-    default:
-        return CODE_ERROR;
     }
 }
 

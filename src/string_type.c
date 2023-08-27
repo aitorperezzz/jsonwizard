@@ -69,37 +69,40 @@ char string_at(const String *string, const size_t index)
     return string->buffer[index];
 }
 
-ResultCode string_copy(String *destination, const String *origin)
+String *string_copy(const String *original)
 {
-    if (destination == NULL || origin == NULL)
+    if (original == NULL)
     {
-        return CODE_MEMORY_ERROR;
+        return NULL;
     }
-    return string_copyFromBuffer(destination, origin->buffer, origin->length);
+    return string_copyFromBuffer(original->buffer, original->length);
 }
 
-ResultCode string_copyFromBuffer(String *destination, const char *origin, const size_t size)
+String *string_copyFromBuffer(const char *origin, const size_t size)
 {
-    if (destination == NULL || origin == NULL)
+    if (origin == NULL)
     {
-        return CODE_MEMORY_ERROR;
+        return NULL;
     }
 
-    // Reset the destination string
-    string_free(destination);
+    String *destination = string_create();
+    if (destination == NULL)
+    {
+        return NULL;
+    }
 
     // Alloc memory for the buffer
     void *tmp = malloc(size + 1);
     if (tmp == NULL)
     {
-        return CODE_MEMORY_ERROR;
+        return NULL;
     }
     destination->buffer = tmp;
     memcpy(destination->buffer, origin, size);
     destination->buffer[size] = '\0';
     destination->length = size;
     destination->capacity = size + 1;
-    return CODE_OK;
+    return destination;
 }
 
 int string_compare(const String *string1, const String *string2)
@@ -155,8 +158,7 @@ String *string_join(const String *string1, const String *string2)
     {
         return NULL;
     }
-    String *result = string_createNonInitialised();
-    string_copyFromBuffer(result, string1->buffer, string1->length);
+    String *result = string_copyFromBuffer(string1->buffer, string1->length);
     string_joinInPlace(result, string2);
     return result;
 }

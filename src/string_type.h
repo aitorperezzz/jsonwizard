@@ -43,14 +43,14 @@ char string_at(const String *string, const size_t index);
 /// @param destination Already existing destination string
 /// @param origin Already existing origin string
 /// @return Result code
-ResultCode string_copy(String *destination, const String *origin);
+String *string_copy(const String *original);
 
 /// @brief Copy a string from a buffer
 /// @param destination Already existing destination string
 /// @param origin Original buffer
 /// @param size NUmber of characters to copy from the buffer
 /// @return Result code
-ResultCode string_copyFromBuffer(String *destination, const char *origin, const size_t size);
+String *string_copyFromBuffer(const char *origin, const size_t size);
 
 /// @brief Compare the provided strings, essentially wrapping strcmp
 /// @param string1 Frist string to compare

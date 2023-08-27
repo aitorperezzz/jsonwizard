@@ -7,11 +7,10 @@
 #include "wizard.h"
 #include "set.h"
 
-static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isLast);
-static ResultCode addBlanks(String *string, size_t number);
+static ResultCode print_node(FILE *file, const Node *node, size_t offset, int isLast);
+static ResultCode add_blanks(String *string, size_t number);
 
-// Receives the root of a JSON object and a name for the file.
-ResultCode printToFile(const Node *root, const String *filename)
+ResultCode print_to_file(const Node *node, const String *filename)
 {
     // Concatenate .json to the name of the file.
     String *name = string_join(filename, string_createFromLiteral(".json"));
@@ -25,46 +24,27 @@ ResultCode printToFile(const Node *root, const String *filename)
     }
 
     // Print the root struct Node to the file.
-    printNode(file, root, 0, 1);
+    print_node(file, node, 0, 1);
 
     // Close the file.
     fclose(file);
     return CODE_OK;
 }
-
-// Receives a pointer to the whole JSON and a key, and
-// prints to stdin.
-ResultCode printToStdin(Node *root, const String *key)
+ResultCode print_to_stdout(const Node *node)
 {
-    if (root == NULL)
+    if (node == NULL)
     {
         printf("ERROR: Cannot print to stdin. Root is NULL.\n");
         return CODE_ERROR;
     }
 
-    if (string_compare(key, string_createFromLiteral("")) == 0)
-    {
-        // The user wants to print the root to stdin.
-        return printNode(NULL, root, 0, 1);
-    }
-    else
-    {
-        // Look for the node.
-        Node *parent = searchByKey(root, key);
-        if (parent == NULL)
-        {
-            printf("ERROR. Cannot print to stdin. Key %s was not found.\n", string_cStr(key));
-            return CODE_ERROR;
-        }
-
-        return printNode(NULL, parent, 0, 1);
-    }
+    return print_node(stdout, node, 0, 1);
 }
 
 // Prints a single node (recursive function).
 // If file != NULL, print to file.
 // If file == NULL, print to stdin.
-static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isLast)
+static ResultCode print_node(FILE *file, const Node *node, size_t offset, int isLast)
 {
     // Check inputs
     if (file == NULL)
@@ -82,48 +62,48 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
     String *buffer = string_create();
 
     // Write the offset to the buffer.
-    addBlanks(buffer, offset);
-
-    // Write the key to the buffer if the node is not root.
-    if (string_compare(node->key, string_createFromLiteral("root")) != 0)
+    if (add_blanks(buffer, offset) != CODE_OK)
     {
-        string_copy(buffer, string_createFromLiteral("\""));
-        string_copy(buffer, node->key);
-        string_copy(buffer, string_createFromLiteral("\": "));
+        return CODE_WRITE_ERROR;
     }
 
-    // Decide according to type.
-    if (node->type == NODE_TYPE_NULL)
+    // Decide according to type
+    switch (node->type)
     {
-        string_copy(buffer, string_createFromLiteral("null"));
-    }
-    else if (node->type == NODE_TYPE_STRING)
+    case NODE_TYPE_NULL:
     {
-        string_copy(buffer, string_createFromLiteral("\""));
-        string_copy(buffer, (String *)node->data);
-        string_copy(buffer, string_createFromLiteral("\""));
+        string_joinInPlace(buffer, string_createFromLiteral("null"));
+        break;
     }
-    else if (node->type == NODE_TYPE_NUMBER)
+    case NODE_TYPE_STRING:
+    {
+        string_joinInPlace(buffer, string_createFromLiteral("\""));
+        string_joinInPlace(buffer, (String *)node->data);
+        string_joinInPlace(buffer, string_createFromLiteral("\""));
+        break;
+    }
+    case NODE_TYPE_NUMBER:
     {
         int number = *((int *)node->data);
-        char numberBuffer[sizeof(char) * (int)log10(number)];
+        char numberBuffer[(int)(ceil(log10(number)) + 1) * sizeof(char)];
         snprintf(numberBuffer, sizeof(numberBuffer), "%d", number);
-        string_copyFromBuffer(buffer, numberBuffer, strlen(numberBuffer));
+        string_joinInPlace(buffer, string_createFromLiteral(numberBuffer));
+        break;
     }
-    else if (node->type == NODE_TYPE_BOOLEAN)
+    case NODE_TYPE_BOOLEAN:
     {
         String *booleanString = booleanCodeToString(*((Boolean *)node->data));
-        string_copy(buffer, booleanString);
+        string_joinInPlace(buffer, booleanString);
     }
-    else if (node->type == NODE_TYPE_ARRAY)
+    case NODE_TYPE_ARRAY:
     {
-        // TODO
+        break;
     }
-    else if (node->type == NODE_TYPE_OBJECT)
+    case NODE_TYPE_OBJECT:
     {
         // Open the object and write the current buffer contents as this is a
         // recursive function
-        string_copy(buffer, string_createFromLiteral("{\n"));
+        buffer = string_copy(string_createFromLiteral("{\n"));
         fprintf(file, "%s", string_cStr(buffer));
 
         // Call this function recursively on its childs.
@@ -133,23 +113,20 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
         for (size_t i = 0; i < size; i++)
         {
             newLast = i == size - 1 ? 1 : 0;
-            printNode(file, vector_get(children, i), offset + 1, newLast);
+            print_node(file, vector_at(children, i), offset + 1, newLast);
         }
 
         // Write the last line that all object nodes finish with
         string_free(buffer);
-        addBlanks(buffer, offset);
-        string_copy(buffer, string_createFromLiteral("}"));
+        add_blanks(buffer, offset);
+        buffer = string_copy(string_createFromLiteral("}"));
     }
-    else
-    {
-        return CODE_ERROR;
     }
 
     // Print the buffer contents
     if (!isLast)
     {
-        string_copy(buffer, string_createFromLiteral(","));
+        buffer = string_copy(string_createFromLiteral(","));
     }
     fprintf(file, "%s\n", string_cStr(buffer));
     return CODE_OK;
@@ -157,10 +134,10 @@ static ResultCode printNode(FILE *file, const Node *node, size_t offset, int isL
 
 // Writes blank spaces to a string.
 // Returns the number of characters written.
-static ResultCode addBlanks(String *string, size_t number)
+static ResultCode add_blanks(String *string, size_t number)
 {
-    char blanks[2 * number];
+    char blanks[2 * number + 1];
     memset(blanks, ' ', 2 * number);
-    string_copyFromBuffer(string, blanks, 2 * number);
-    return CODE_OK;
+    blanks[2 * number + 1] = '\0';
+    return string_joinInPlace(string, string_createFromLiteral(blanks));
 }

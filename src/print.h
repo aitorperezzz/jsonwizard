@@ -4,7 +4,7 @@
 #include "node.h"
 #include "utils.h"
 
-ResultCode printToFile(const Node *root, const String *filename);
-ResultCode printToStdin(Node *node, const String *key);
+ResultCode print_to_file(const Node *node, const String *filename);
+ResultCode print_to_stdout(const Node *node);
 
 #endif

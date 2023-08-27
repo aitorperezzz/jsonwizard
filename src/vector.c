@@ -87,7 +87,7 @@ ResultCode vector_clear(Vector *vector)
     // Free the memory in use at each index in the vector
     for (size_t i = 0, n = vector->size; i < n; i++)
     {
-        if (vector->freeCallback(vector_get(vector, i)) != CODE_OK)
+        if (vector->freeCallback(vector_at(vector, i)) != CODE_OK)
         {
             return CODE_MEMORY_ERROR;
         }
@@ -118,7 +118,7 @@ ResultCode vector_free(Vector *vector)
     return CODE_OK;
 }
 
-void *vector_get(const Vector *vector, const size_t index)
+void *vector_at(const Vector *vector, const size_t index)
 {
     if (vector == NULL)
     {
@@ -199,4 +199,18 @@ ResultCode vector_erase(Vector *vector, Iterator first, Iterator last)
     vector->size -= iterator_distance(first, last);
 
     return CODE_OK;
+}
+
+ResultCode vector_insert(Vector *vector, Iterator first, Iterator last, Iterator destination)
+{
+    return CODE_NOT_SUPPORTED;
+}
+
+bool vector_empty(const Vector *vector)
+{
+    if (vector == NULL)
+    {
+        return true;
+    }
+    return vector_size(vector) == 0;
 }

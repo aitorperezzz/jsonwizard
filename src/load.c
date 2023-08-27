@@ -1,17 +1,16 @@
 // This module receives the name of a .json file and tries to import it
 // to a node structure.
 
-#include "load.h"
-
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "load.h"
 #include "set.h"
 #include "print.h"
-#include "free.h"
 #include "vector.h"
+#include "node.h"
 
 // Defines.
 #define JSONSTRING_BLOCK_LENGTH 100
@@ -32,7 +31,7 @@ static size_t getSizeOfObjectValue(const char *buffer, const size_t bufferSize);
 ResultCode jsonLoad(Node **rootAddress, String *filename)
 {
     // Free the previous root structure and start a new one.
-    freeNode(*rootAddress);
+    node_free(*rootAddress);
 
     // Try to open the specified file.
     FILE *file = fopen(string_cStr(filename), "r");
@@ -75,7 +74,7 @@ ResultCode jsonLoad(Node **rootAddress, String *filename)
         *rootAddress = newRoot;
         free(jsonString);
         printf("JSON loaded to memory:\n");
-        printToStdin(newRoot, string_createFromLiteral("root"));
+        print_to_stdout(newRoot);
         fclose(file);
         return CODE_OK;
     }
@@ -143,8 +142,7 @@ static String *jsonFileToString(FILE *file)
         position++;
     }
 
-    String *result = string_create();
-    string_copyFromBuffer(result, buffer, strlen(buffer));
+    String *result = string_copyFromBuffer(buffer, strlen(buffer));
     free(buffer);
     return result;
 }
@@ -182,8 +180,7 @@ static Node *parseNode(const String *string)
     size_t keyLength = (string_cStr(string), length);
 
     // Store the key.
-    String *key = string_create();
-    string_copyFromBuffer(key, string_cStr(string), keyLength);
+    String *key = string_copyFromBuffer(string_cStr(string), keyLength);
 
     // Get the position of the value in the node.
     position = keyLength + 3;
@@ -202,8 +199,7 @@ static Node *parseNode(const String *string)
     {
         // This is a string node.
         valueLength = length - position - 2;
-        String *value = string_create();
-        string_copyFromBuffer(value, string_cStr(string) + position + 1, valueLength);
+        String *value = string_copyFromBuffer(string_cStr(string) + position + 1, valueLength);
 
         // Update node information.
         setType(node, NODE_TYPE_STRING);
@@ -213,8 +209,7 @@ static Node *parseNode(const String *string)
     {
         // This is an integer node.
         valueLength = length - position;
-        String *numberString = string_create();
-        string_copyFromBuffer(numberString, string_cStr(string) + position, valueLength);
+        String *numberString = string_copyFromBuffer(string_cStr(string) + position, valueLength);
 
         // Update node information.
         setType(node, NODE_TYPE_NUMBER);
@@ -267,14 +262,13 @@ static Node *parseNode(const String *string)
             if (childSize > 0)
             {
                 // A new node exists.
-                String *nodeString = string_create();
-                string_copyFromBuffer(nodeString, string_cStr(string) + pointer, childSize);
+                String *nodeString = string_copyFromBuffer(string_cStr(string) + pointer, childSize);
+
                 newNode = parseNode(nodeString);
                 if (newNode == NULL)
                 {
                     printf("ERROR: could not create node beginning at position %d.\n", pointer);
                     printf("ERROR: string received by parseNode: %s.\n", string_cStr(string) + pointer);
-                    freeData(node);
                     free(node);
                     return NULL;
                 }
@@ -303,7 +297,6 @@ static Node *parseNode(const String *string)
         // Error parsing the node.
         printf("ERROR. value in node could not be recognised.\n");
         printf("ERROR: string received by parseNode: %s.\n", string_cStr(string));
-        freeData(node);
         free(node);
         return NULL;
     }

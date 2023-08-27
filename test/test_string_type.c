@@ -63,13 +63,10 @@ static void testGetChar(void **state)
 static void testCopy(void **state)
 {
     String *string1, *string2;
-    ResultCode result;
 
     // Test strings with OK values
     string1 = string_createFromLiteral("My literal string");
-    string2 = string_create();
-    result = string_copy(string2, string1);
-    assert_int_equal(result, CODE_OK);
+    string2 = string_copy(string1);
     assert_string_equal(string2->buffer, string1->buffer);
     assert_int_equal(string2->length, string1->length);
     assert_int_equal(string2->capacity, string1->capacity);
@@ -78,21 +75,10 @@ static void testCopy(void **state)
     free(string1);
     free(string2);
 
-    // Copy to a NULL string
-    string1 = NULL;
-    string2 = string_create();
-    result = string_copy(string1, string2);
-    assert_int_equal(result, CODE_MEMORY_ERROR);
-    string_free(string1);
-    string_free(string2);
-    free(string1);
-    free(string2);
-
     // Copy from a NULL string
-    string1 = string_create();
     string2 = NULL;
-    result = string_copy(string1, string2);
-    assert_int_equal(result, CODE_MEMORY_ERROR);
+    string1 = string_copy(string2);
+    assert_ptr_equal(string1, NULL);
     string_free(string1);
     string_free(string2);
     free(string1);
@@ -102,26 +88,13 @@ static void testCopy(void **state)
 static void testCopyFromBuffer(void **state)
 {
     String *string1, *string2;
-    ResultCode result;
 
     // Test strings with OK values
     string1 = string_createFromLiteral("My literal string");
-    string2 = string_create();
-    result = string_copyFromBuffer(string2, string1->buffer, string1->length);
-    assert_int_equal(result, CODE_OK);
+    string2 = string_copyFromBuffer(string1->buffer, string1->length);
     assert_string_equal(string2->buffer, string1->buffer);
     assert_int_equal(string2->length, string1->length);
     assert_int_equal(string2->capacity, string1->capacity);
-    string_free(string1);
-    string_free(string2);
-    free(string1);
-    free(string2);
-
-    // Copy to a NULL string
-    string1 = NULL;
-    string2 = string_create();
-    result = string_copyFromBuffer(string1, string2->buffer, string2->length);
-    assert_int_equal(result, CODE_MEMORY_ERROR);
     string_free(string1);
     string_free(string2);
     free(string1);

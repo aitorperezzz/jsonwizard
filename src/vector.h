@@ -49,7 +49,7 @@ ResultCode vector_free(Vector *vector);
 /// @param vector The vector
 /// @param index Index of the element to return
 /// @return Pointer to the data at the provided index
-void *vector_get(const Vector *vector, const size_t index);
+void *vector_at(const Vector *vector, const size_t index);
 
 /// @brief Changes the data inside the vector at the specified index
 /// @param vector Vector to modify
@@ -74,5 +74,9 @@ Iterator vector_end(const Vector *vector);
 /// @param last Iterator to the last (past) element to remove
 /// @return Result code
 ResultCode vector_erase(Vector *vector, Iterator first, Iterator last);
+
+ResultCode vector_insert(Vector *vector, Iterator first, Iterator last, Iterator destination);
+
+bool vector_empty(const Vector *vector);
 
 #endif

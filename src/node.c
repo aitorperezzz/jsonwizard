@@ -4,233 +4,294 @@
 #include "node.h"
 #include "vector.h"
 #include "parse.h"
+#include "map.h"
 
-static ResultCode nodeInitialise(Node *node);
-
-Node *nodeCreate(const String *name)
+Node *node_create()
 {
-    Node *result = malloc(sizeof(Node));
-    if (result == NULL)
+    Node *node = malloc(sizeof(Node));
+    if (node == NULL)
     {
         return NULL;
     }
-    // type
-    result->type = NODE_TYPE_NULL;
-    // key
-    result->key = string_create();
-    if (result->key == NULL)
-    {
-        return NULL;
-    }
-    if (string_copy(result->key, name) != CODE_OK)
-    {
-        return NULL;
-    }
-    // parent
-    result->parent = NULL;
-    // data
-    result->data = NULL;
 
-    return result;
+    // Default values
+    node->type = NODE_TYPE_NULL;
+    node->parent = NULL;
+    node->data = NULL;
+    return node;
 }
 
-ResultCode nodeAppend(Node *node, const String *parent, const String *name)
+String *node_to_string(const Node *node)
 {
-    if (node == NULL || parent == NULL || name == NULL)
-    {
-        return CODE_MEMORY_ERROR;
-    }
-
-    // Look for the parent key inside the node
-    Node *parentNode = nodeGet(node, parent);
-    if (parentNode == NULL)
-    {
-        printf("Key %s does not exist in node with key %s", string_cStr(parent), string_cStr(node->key));
-        return CODE_LOGIC_ERROR;
-    }
-
-    // Only if the parent is of type object
-    if (parentNode->type != NODE_TYPE_OBJECT)
-    {
-        printf("Cannot append node to node of type %d", parentNode->type);
-        return CODE_LOGIC_ERROR;
-    }
-
-    // Create the child node
-    Node *child = nodeCreate(name);
-    if (child == NULL)
-    {
-        return CODE_MEMORY_ERROR;
-    }
-
-    // Append the child node to the existing nodes
-    Vector *objects = (Vector *)parentNode->data;
-    if (objects == NULL)
-    {
-        return CODE_MEMORY_ERROR;
-    }
-    if (vector_push(objects, &child) != CODE_OK)
-    {
-        return CODE_ERROR;
-    }
-
-    return CODE_OK;
-}
-
-Node *nodeGet(Node *root, const String *key)
-{
-    if (root == NULL || key == NULL)
-    {
-        return NULL;
-    }
-
-    if (root->type != NODE_TYPE_OBJECT)
-    {
-        if (string_compare(root->key, key) == 0)
-        {
-            return root;
-        }
-        else
-        {
-            return NULL;
-        }
-    }
-
-    // This is an object node, so iterate over all its nodes and look recursively
-    Vector *objects = (Vector *)root->data;
-    Node *current = NULL;
-    for (size_t i = 0, n = vector_size(objects); i < n; i++)
-    {
-        current = nodeGet(vector_get(objects, i), key);
-        if (current != NULL)
-        {
-            return current;
-        }
-    }
+    // TODO
     return NULL;
 }
 
-ResultCode nodeSetType(Node *node, const NodeType type)
+Node *node_from_string(const String *string)
 {
-    // First reset the node
-    if (nodeFree(node) != CODE_OK)
+    // TODO
+    return NULL;
+}
+
+NodeType node_get_type(const Node *node)
+{
+    if (node == NULL)
     {
-        return CODE_ERROR;
+        return NODE_TYPE_NULL;
+    }
+    return node->type;
+}
+
+Node *node_get_parent(const Node *node)
+{
+    if (node == NULL)
+    {
+        return NULL;
+    }
+    return node->parent;
+}
+
+Node *node_get(Node *node, const String *key)
+{
+    if (node == NULL || key == NULL)
+    {
+        return NULL;
     }
 
-    // Set the type
-    node->type = type;
-
-    // Initialise according to the type
-    if (nodeInitialise(node) != CODE_OK)
+    // The node has to be of type object in order to look
+    // for a key
+    if (node->type != NODE_TYPE_OBJECT)
     {
-        return CODE_ERROR;
+        return NULL;
     }
+    if (node->data == NULL)
+    {
+        return NULL;
+    }
+
+    // If the node is of type object, the data is a map
+    Map *map = node->data;
+    return (Node *)map_at(map, key);
+}
+
+ResultCode node_append(Node *node, const String *key, const Node *child)
+{
+    if (node == NULL || key == NULL || child == NULL)
+    {
+        return CODE_MEMORY_ERROR;
+    }
+
+    // This function can only be used if the node is of type object
+    if (node->type != NODE_TYPE_OBJECT)
+    {
+        return CODE_LOGIC_ERROR;
+    }
+
+    // Add the key value to the existant map
+    Map *map = node->data;
+    if (map == NULL)
+    {
+        return CODE_MEMORY_ERROR;
+    }
+    map_insert(node->data, key, child);
 
     return CODE_OK;
 }
 
-ResultCode nodeSetKey(Node *node, const String *key)
+ResultCode node_erase(Node *node, const String *key)
 {
     if (node == NULL || key == NULL)
     {
         return CODE_MEMORY_ERROR;
     }
 
-    string_copy(node->key, key);
+    // This function can only be used if the node is of type object
+    if (node->type != NODE_TYPE_OBJECT)
+    {
+        return CODE_LOGIC_ERROR;
+    }
+
+    // Check if the key can be found inside this node
+    Map *map = node->data;
+    Iterator iterator = map_find(map, key);
+    Iterator end = map_end(map);
+    if (iterator_equal(iterator, end))
+    {
+        return CODE_LOGIC_ERROR;
+    }
+
+    // Remove the element at the iterator just found
+    Iterator last = iterator_increase(iterator, 1);
+    if (map_erase(map, iterator, last) != CODE_OK)
+    {
+        return CODE_LOGIC_ERROR;
+    }
+
     return CODE_OK;
 }
 
-ResultCode nodeSetData(Node *node, const String *data)
+ResultCode node_set_key(Node *node, const String *key)
+{
+    if (node == NULL || key == NULL)
+    {
+        return CODE_MEMORY_ERROR;
+    }
+
+    // If this node does not have a parent, I cannot continue
+    if (node->parent == NULL)
+    {
+        return CODE_MEMORY_ERROR;
+    }
+
+    // If the parent is not of type object, I cannot continue
+    if (node->parent->type != NODE_TYPE_OBJECT)
+    {
+        return CODE_LOGIC_ERROR;
+    }
+
+    // Find the key value pair inside the parent
+    Map *map = node->parent->data;
+    for (size_t i = 0, n = map_size(map); i < n; i++)
+    {
+        MapElement *element = vector_at(map->elements, i);
+        if (element->value == node)
+        {
+            // Change the key here because we know the index
+            element->key = string_copy(key);
+            return CODE_OK;
+        }
+    }
+
+    return CODE_LOGIC_ERROR;
+}
+
+ResultCode node_set_data(Node *node, const String *data)
 {
     if (node == NULL || data == NULL)
     {
         return CODE_MEMORY_ERROR;
     }
 
-    switch (node->type)
-    {
-    case NODE_TYPE_NULL:
-        printf("Cannot set data on node of type null");
-        return CODE_LOGIC_ERROR;
-    case NODE_TYPE_STRING:
-        string_copy(node->data, data);
-        return CODE_OK;
-    case NODE_TYPE_NUMBER:
-    {
-        double value;
-        if (parseNumber(data, &value) != CODE_OK)
-        {
-            return CODE_FORMAT_ERROR;
-        }
-        memcpy(node->data, &value, sizeof(value));
-        return CODE_OK;
-    }
+    // TODO:
+    // the data needs to be parsed to check the type
+    // clean the previous value of the complete node
+    // assign the new type of the node
+    // assign the new data of the node
 
-    case NODE_TYPE_BOOLEAN:
-    {
-        Boolean value;
-        if (parseBoolean(data, &value) != CODE_OK)
-        {
-            return CODE_FORMAT_ERROR;
-        }
-        memcpy(node->data, &value, sizeof(value));
-        return CODE_OK;
-    }
-
-    case NODE_TYPE_ARRAY:
-    case NODE_TYPE_OBJECT:
-        printf("Not supported");
-        return CODE_NOT_SUPPORTED;
-    default:
-        printf("Invalid node type");
-        return CODE_LOGIC_ERROR;
-    }
+    return CODE_NOT_SUPPORTED;
 }
 
-ResultCode nodeErase(Node *root, const String *key)
+ResultCode node_array_push(Node *root, Node *node)
 {
-    Node *node = nodeGet(root, key);
-    if (node == NULL)
-    {
-        printf("Cannot erase. Node %s not found in %s", string_cStr(key), string_cStr(root->key));
-        return CODE_LOGIC_ERROR;
-    }
-
-    // Get the parent node, which must be an object node
-    Node *parent = node->parent;
-    if (parent == NULL || parent->type != NODE_TYPE_OBJECT)
-    {
-        return CODE_LOGIC_ERROR;
-    }
-
-    // Check if we can find it among the children
-    Vector *objects = (Vector *)parent->data;
-    Iterator found = iterator_find(vector_begin(objects), vector_end(objects), &node);
-    if (iterator_equal(found, vector_end(objects)))
-    {
-        return CODE_OK;
-    }
-
-    // Free the contents themselves, then remove the element from the list
-    if (nodeFree(node) != CODE_OK)
+    if (root == NULL || node == NULL)
     {
         return CODE_MEMORY_ERROR;
     }
-    if (vector_erase(objects, found, iterator_increase(found, 1)) != CODE_OK)
+
+    // Root node needs to be of type array
+    if (root->type != NODE_TYPE_ARRAY)
     {
         return CODE_LOGIC_ERROR;
     }
 
+    // Push it to the existing list
+    Vector *vector = root->data;
+    if (vector_push(vector, node) != CODE_OK)
+    {
+        return CODE_LOGIC_ERROR;
+    }
     return CODE_OK;
 }
 
-ResultCode nodeFree(void *node)
+Iterator node_array_begin(Node *node)
 {
-    return CODE_NOT_SUPPORTED;
+    if (node == NULL)
+    {
+        return iterator_invalidIterator();
+    }
+    if (node->type != NODE_TYPE_ARRAY)
+    {
+        return iterator_invalidIterator();
+    }
+
+    Vector *vector = node->data;
+    return vector_begin(vector);
 }
 
-static ResultCode nodeInitialise(Node *node)
+Iterator node_array_end(Node *node)
 {
-    return CODE_NOT_SUPPORTED;
+    if (node == NULL)
+    {
+        return iterator_invalidIterator();
+    }
+    if (node->type != NODE_TYPE_ARRAY)
+    {
+        return iterator_invalidIterator();
+    }
+
+    Vector *vector = node->data;
+    return vector_end(vector);
+}
+
+ResultCode node_array_insert(Node *node, Iterator first, Iterator last, Iterator destination)
+{
+    if (node == NULL)
+    {
+        return CODE_MEMORY_ERROR;
+    }
+    if (node->type != NODE_TYPE_ARRAY)
+    {
+        return CODE_LOGIC_ERROR;
+    }
+
+    Vector *vector = node->data;
+    return vector_insert(vector, first, last, destination);
+}
+
+size_t node_array_size(Node *node)
+{
+    if (node == NULL)
+    {
+        return CODE_MEMORY_ERROR;
+    }
+    if (node->type != NODE_TYPE_ARRAY)
+    {
+        return CODE_LOGIC_ERROR;
+    }
+
+    return vector_size(node->data);
+}
+
+ResultCode node_free(Node *node)
+{
+    ResultCode result = CODE_OK;
+    switch (node->type)
+    {
+    case NODE_TYPE_NULL:
+    case NODE_TYPE_NUMBER:
+    case NODE_TYPE_BOOLEAN:
+        break;
+    case NODE_TYPE_STRING:
+        result = string_free(node->data);
+        break;
+    case NODE_TYPE_ARRAY:
+        result = vector_free(node->data);
+        break;
+    case NODE_TYPE_OBJECT:
+        result = map_free(node->data);
+        break;
+    }
+
+    if (node->data != NULL)
+    {
+        free(node->data);
+        node->data = NULL;
+    }
+
+    return result;
+}
+
+ResultCode node_free_raw(void *rawNode)
+{
+    return node_free((Node *)rawNode);
 }
