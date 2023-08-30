@@ -6,11 +6,21 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "load.h"
-#include "set.h"
-#include "print.h"
+#include "read.h"
 #include "vector.h"
 #include "node.h"
+
+Node *read_from_file(const String *filename)
+{
+    return NULL;
+}
+
+Node *read_from_string(const String *string)
+{
+    return NULL;
+}
+
+#if 0
 
 // Defines.
 #define JSONSTRING_BLOCK_LENGTH 100
@@ -433,3 +443,5 @@ static size_t getSizeOfObjectValue(const char *buffer, const size_t bufferSize)
     // If it reached the end, return the size of the whole block.
     return bufferSize;
 }
+
+#endif

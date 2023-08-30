@@ -165,9 +165,9 @@ ResultCode node_set_key(Node *node, const String *key)
     return CODE_LOGIC_ERROR;
 }
 
-ResultCode node_set_data(Node *node, const String *data)
+ResultCode node_set_data(Node *node, const Node *new)
 {
-    if (node == NULL || data == NULL)
+    if (node == NULL || new == NULL)
     {
         return CODE_MEMORY_ERROR;
     }
@@ -287,6 +287,7 @@ ResultCode node_free(Node *node)
         free(node->data);
         node->data = NULL;
     }
+    node->type = NODE_TYPE_NULL;
 
     return result;
 }

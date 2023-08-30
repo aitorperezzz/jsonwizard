@@ -41,7 +41,7 @@ ResultCode node_erase(Node *node, const String *key);
 
 ResultCode node_set_key(Node *node, const String *key);
 
-ResultCode node_set_data(Node *node, const String *data);
+ResultCode node_set_data(Node *node, const Node *new);
 
 ResultCode node_array_push(Node *root, Node *node);
 

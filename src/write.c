@@ -1,16 +1,15 @@
-#include "print.h"
-
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
 
-#include "wizard.h"
+#include "write.h"
+#include "vector.h"
 #include "set.h"
 
 static ResultCode print_node(FILE *file, const Node *node, size_t offset, int isLast);
 static ResultCode add_blanks(String *string, size_t number);
 
-ResultCode print_to_file(const Node *node, const String *filename)
+ResultCode write_to_file(const Node *node, const String *filename)
 {
     // Concatenate .json to the name of the file.
     String *name = string_join(filename, string_createFromLiteral(".json"));
@@ -30,7 +29,7 @@ ResultCode print_to_file(const Node *node, const String *filename)
     fclose(file);
     return CODE_OK;
 }
-ResultCode print_to_stdout(const Node *node)
+ResultCode write_to_stdout(const Node *node)
 {
     if (node == NULL)
     {

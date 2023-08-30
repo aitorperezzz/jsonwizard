@@ -1,11 +1,11 @@
-// This module modifies fields inside a node.
-#include "set.h"
-
 // Includes.
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "set.h"
+#include "vector.h"
 
 // Prototypes of static functions.
 static int isInteger(const String *string);

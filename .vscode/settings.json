@@ -12,6 +12,8 @@
         "src"
     ],
     "files.associations": {
-        "vector.h": "c"
+        "vector.h": "c",
+        "istream": "c",
+        "*.tcc": "c"
     }
 }

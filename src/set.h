@@ -1,7 +1,6 @@
 #ifndef SET_H
 #define SET_H
 
-#include "wizard.h"
 #include "utils.h"
 #include "node.h"
 

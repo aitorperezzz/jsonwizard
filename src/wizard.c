@@ -1,291 +1,118 @@
-#include "wizard.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "utils.h"
-#include "print.h"
-#include "load.h"
-#include "set.h"
+#include "write.h"
+#include "read.h"
 #include "string_type.h"
 #include "node.h"
 #include "vector.h"
+#include "parse.h"
 
-String *readUserInput();
-
-// Main.
 int main(int argc, char **argv)
 {
-    // String to store the complete input from the user
-    String *input = NULL;
-
-    // Separately store the words of the last user command
-    Vector *words = vector_create(sizeof(String *), string_free);
-
-    // Create the root node of the tree
-    Node *root = createRoot();
-    if (root == NULL)
+    // Turn the command provided into a complete
+    String *command = string_create();
+    for (size_t i = 1; i < argc; i++)
     {
-        printf("ERROR: could not create root node");
-        return -1;
+        string_joinInPlace(command, string_createFromLiteral(argv[i]));
     }
 
-    // Print hwo to use the application
-    printHelp();
-
-    // Listen to commands in a loop
-    while (1)
+    // Parse the command
+    ParsedCommand *parsedCommand = parse(command);
+    if (parsedCommand == NULL)
     {
-        // Print the prompt
-        printf("\tjsonwizard> ");
-
-        // Read all input provided by the user
-        string_free(input);
-        input = readUserInput();
-        if (input == NULL)
-        {
-            printf("ERROR: could not read user input");
-            return -1;
-        }
-
-        // Parse input into words
-        if (vector_clear(words) != CODE_OK)
-        {
-            printf("Could not clear last user command");
-            return -1;
-        }
-        if (parseCommand(input, words) == CODE_ERROR)
-        {
-            printf("ERROR: there was an error parsing the command. Continuing...\n");
-            continue;
-        }
-
-        // Execute the command and treat the errors.
-        ResultCode result = executeCommand(words, &root);
-        if (result == CODE_OK)
-        {
-            printf("The command executed correctly. Continuing...\n");
-            continue;
-        }
-        else if (result == CODE_ERROR)
-        {
-            printf("The command could not be executed. Continuing...\n");
-            continue;
-        }
-    }
-}
-
-// Prints the help menu.
-ResultCode printHelp()
-{
-    printf("How to use jsonwizard:\n");
-    printf("\t> append <child key> to <parent key>\n");
-    printf("\t> modify <key> set <field> <value>\n");
-    printf("\t> delete [<key>]\n");
-    printf("\t> write <filename without extension>\n");
-    printf("\t> print [<key>]\n");
-    printf("\t> load <filename>\n");
-    printf("\t> help\n");
-    printf("\t> quit\n");
-
-    return CODE_OK;
-}
-
-String *readUserInput()
-{
-    String *input = string_create();
-    // Read in chunks of 256 characters until the \n character is found
-    const size_t chunkSize = 256;
-    size_t index = 0;
-    do
-    {
-        if (string_reserve(input, input->capacity + chunkSize) != CODE_OK)
-        {
-            return NULL;
-        }
-        if (fgets(input->buffer, chunkSize, stdin) == NULL)
-        {
-            return NULL;
-        }
-        index += chunkSize;
-    } while (strchr(input->buffer + index, '\n') != NULL);
-    return input;
-}
-
-ResultCode parseCommand(const String *input, Vector *words)
-{
-    // General checks
-    if (input == NULL)
-    {
-        return CODE_MEMORY_ERROR;
-    }
-    if (words == NULL)
-    {
-        return CODE_MEMORY_ERROR;
+        return CODE_SYNTAX_ERROR;
     }
 
-    // Counter for letters.
-    size_t charBegin = 0;
-
-    for (size_t i = 0, n = string_length(input); i < n; i++)
+    // If the user has provided a filename, we start by loading the JSON
+    // inside the file. If not, we begin with an empty JSON
+    Node *root;
+    if (parsedCommand->filename != NULL)
     {
-        if (input->buffer[i] == ' ' || i == n - 1)
+        root = read_from_file(parsedCommand->filename);
+        if (!root)
         {
-            String *newWord = string_copyFromBuffer(input->buffer + charBegin, i - charBegin);
-            vector_push(words, newWord);
-            continue;
+            return CODE_READ_ERROR;
         }
     }
-    return CODE_OK;
-}
+    else
+    {
+        root = node_create();
+        if (!root)
+        {
+            return CODE_MEMORY_ERROR;
+        }
+    }
 
-// Execute the command.
-ResultCode executeCommand(const Vector *command, Node **rootAddress)
-{
-    if (strcmp(vector_at(command, 0), "append") == 0)
+    // Decide depending on the type of command
+    switch (parsedCommand->command)
     {
-        // Structure: append <child key> to <parent key>.
-        return jsonAppend(rootAddress, vector_at(command, 3), vector_at(command, 1));
-    }
-    else if (strcmp(vector_at(command, 0), "modify") == 0)
+    case COMMAND_SET_KEY:
     {
-        // Structure: modify <key> set <field> <value>.
-        return jsonModify(*rootAddress, vector_at(command, 1), vector_at(command, 3), vector_at(command, 4));
-    }
-    else if (strcmp(vector_at(command, 0), "delete") == 0)
-    {
-        // Structure: delete [<key>].
-        String *key = vector_at(command, 1);
-        Node *node = node_get(*rootAddress, key);
+        // Get the path to the original node
+        JsonPath originalPath = parsedCommand->data.setKeyData.path;
+        // Try to find the node
+        Node *node = json_path_get(&originalPath, root);
         if (!node)
         {
             return CODE_LOGIC_ERROR;
         }
-        return node_erase(node->parent, key);
+        // Once the node has been found, modify the key
+        if (node_set_key(node, &parsedCommand->data.setKeyData.key) != CODE_OK)
+        {
+            return CODE_LOGIC_ERROR;
+        }
+        return CODE_OK;
     }
-    else if (strcmp(vector_at(command, 0), "write") == 0)
+    case COMMAND_SET_VALUE:
     {
-        // Structure: write <filename>
-        return print_to_file(*rootAddress, vector_at(command, 1));
+        // Create a new node with the string that has been provided
+        Node *new = read_from_string(&parsedCommand->data.setValueData.value);
+        if (!new)
+        {
+            return CODE_SYNTAX_ERROR;
+        }
+        // Get the path to the original node
+        JsonPath originalPath = parsedCommand->data.setValueData.path;
+        // Try to find the node
+        // TODO: this has to be done recursively
+        Node *node = json_path_get(&originalPath, root);
+        if (!node)
+        {
+            // In this case, the node has to be appended, so first go back one
+            // element in the path
+            JsonPath *previousPath = json_path_decrease(&originalPath);
+            // Try to find this node
+            Node *previousNode = json_path_get(previousPath, root);
+            if (!previousNode)
+            {
+                return CODE_LOGIC_ERROR;
+            }
+            // Get the key of the new node
+            String *key = json_path_leaf(&originalPath);
+            // Append to the parent
+            return node_append(previousNode, key, new);
+        }
+        else
+        {
+            return node_set_data(node, new);
+        }
+        return CODE_OK;
     }
-    else if (strcmp(vector_at(command, 0), "print") == 0)
+    case COMMAND_ERASE:
     {
-        // Structure: print [<key>].
-        String *key = vector_at(command, 1);
-        Node *node = node_get(*rootAddress, key);
-        return print_to_stdout(node);
+        // Get the path of the node we want to erase
+        JsonPath path = parsedCommand->data.eraseData.path;
+        // Try to find the node in the tree
+        Node *node = json_path_get(&path, root);
+        if (!node)
+        {
+            return CODE_MEMORY_ERROR;
+        }
+        // Remove this node
+        return node_erase(node->parent, json_path_leaf(&path));
     }
-    else if (strcmp(vector_at(command, 0), "load") == 0)
-    {
-        // Structure: load <filename>.
-        return jsonLoad(rootAddress, vector_at(command, 1));
     }
-    else if (strcmp(vector_at(command, 0), "help") == 0)
-    {
-        return printHelp();
-    }
-    else
-    {
-        printf("ERROR: the command could not be understood.\n");
-        return CODE_ERROR;
-    }
-}
-
-// Tries to create a node and returns a pointer to that node.
-Node *createNode(void)
-{
-    // Try to create space for a new node.
-    Node *node = malloc(sizeof(Node));
-    if (node == NULL)
-    {
-        printf("ERROR: could not create the node.\n");
-        return NULL;
-    }
-
-    // Initialize it to default values.
-    if (initializeNode(node) == CODE_OK)
-    {
-        return node;
-    }
-
-    return NULL;
-}
-
-// Tries to create a root node.
-Node *createRoot(void)
-{
-    Node *root = createNode();
-    if (root == NULL)
-    {
-        printf("ERROR: could not create the root node.\n");
-        return NULL;
-    }
-
-    setKey(root, string_createFromLiteral("root"));
-    setType(root, NODE_TYPE_OBJECT);
-    return root;
-}
-
-// Initialize a node to the default values.
-ResultCode initializeNode(Node *node)
-{
-    if (node == NULL)
-    {
-        printf("ERROR: cannot initialize a NULL node.\n");
-        return CODE_ERROR;
-    }
-
-    node->type = NODE_TYPE_NULL;
-    node->parent = NULL;
-    node->data = NULL;
-
-    return CODE_OK;
-}
-
-// Append a node to a parent node.
-ResultCode jsonAppend(Node **rootAddress, const String *parentKey, const String *childKey)
-{
-    Node *root = *rootAddress;
-
-    if (root == NULL)
-    {
-        printf("ERROR: cannot append node because root is NULL.\n");
-        return CODE_ERROR;
-    }
-
-    // Try to find the parent node.
-    Node *parent = node_get(root, parentKey);
-    if (parent == NULL)
-    {
-        printf("ERROR: could not find the parent key in the root node.\n");
-        return CODE_ERROR;
-    }
-    else if (validateType(parent->type))
-    {
-        printf("ERROR: cannot append node to a node without a valid type.\n");
-        return CODE_ERROR;
-    }
-    else if (parent->type != NODE_TYPE_OBJECT)
-    {
-        printf("ERROR: cannot append node to a node that is not of type object.\n");
-        return CODE_ERROR;
-    }
-
-    // TODO: prevent from appending when the key is already found.
-
-    // Only in this case create a new node.
-    Node *newNode = createNode();
-    if (newNode == NULL)
-    {
-        printf("ERROR: could not create a child node.\n");
-        return CODE_ERROR;
-    }
-    setKey(newNode, childKey);
-
-    // Link the parent to the child.
-    vector_push((Vector *)parent->data, newNode);
-    newNode->parent = parent;
-
-    return CODE_OK;
 }
