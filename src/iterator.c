@@ -3,7 +3,7 @@
 
 #include "iterator.h"
 
-Iterator iterator_invalidIterator(void)
+Iterator iterator_invalid(void)
 {
     Iterator iterator;
     iterator.pointer = NULL;
@@ -25,7 +25,7 @@ Iterator iterator_copy(Iterator first, Iterator last, Iterator result)
     if (iterator_distance(first, result) < iterator_distance(first, last))
     {
         printf("Cannot copy to a range between first and last\n");
-        return iterator_invalidIterator();
+        return iterator_invalid();
     }
     const size_t distance = iterator_distance(first, last);
     for (size_t i = 0; i < distance; i++)

@@ -10,18 +10,29 @@
 #include "vector.h"
 #include "parse.h"
 
+ResultCode executeCommand(Node *root, const ParsedCommand *parsedCommand);
+Node *traverse(Node *node, const Vector *steps, const bool create);
+
 int main(int argc, char **argv)
 {
-    // Turn the command provided into a complete
+    // Turn the command provided into a complete string for the parser
     String *command = string_create();
     for (size_t i = 1; i < argc; i++)
     {
-        string_joinInPlace(command, string_createFromLiteral(argv[i]));
+        if (string_joinInPlace(command, string_createFromLiteral(argv[i])) != CODE_OK)
+        {
+            return CODE_MEMORY_ERROR;
+        }
     }
 
     // Parse the command
     ParsedCommand *parsedCommand = parse(command);
     if (parsedCommand == NULL)
+    {
+        return CODE_SYNTAX_ERROR;
+    }
+    // Check the json path is valid
+    if (!parsedCommand->path.valid)
     {
         return CODE_SYNTAX_ERROR;
     }
@@ -46,73 +57,154 @@ int main(int argc, char **argv)
         }
     }
 
+    // Execute command
+    ResultCode result = executeCommand(root, parsedCommand);
+    if (result != CODE_OK)
+    {
+        return result;
+    }
+
+    // Output to file
+    return write_to_file(root, parsedCommand->filename);
+}
+
+ResultCode executeCommand(Node *root, const ParsedCommand *parsedCommand)
+{
     // Decide depending on the type of command
     switch (parsedCommand->command)
     {
     case COMMAND_SET_KEY:
     {
-        // Get the path to the original node
-        JsonPath originalPath = parsedCommand->data.setKeyData.path;
-        // Try to find the node
-        Node *node = json_path_get(&originalPath, root);
-        if (!node)
+        // Get the json path that was provided by the user
+        JsonPath jsonPath = parsedCommand->path;
+        // Iterate over all the possible paths returned
+        for (size_t i = 0, n = vector_size(jsonPath.paths); i < n; i++)
         {
-            return CODE_LOGIC_ERROR;
-        }
-        // Once the node has been found, modify the key
-        if (node_set_key(node, &parsedCommand->data.setKeyData.key) != CODE_OK)
-        {
-            return CODE_LOGIC_ERROR;
+            // Get the current path, which is a vector of steps
+            Vector *steps = vector_at(jsonPath.paths, i);
+            // Point to the node at the end of the path, in this case
+            // we are not allowed to create nodes along the way
+            Node *node = traverse(root, steps, false);
+            if (!node)
+            {
+                return CODE_LOGIC_ERROR;
+            }
+            // Now we are pointing to the node we want, so update the key if possible
+            if (node_set_key(node, &parsedCommand->data.setKeyData.key) != CODE_OK)
+            {
+                return CODE_LOGIC_ERROR;
+            }
         }
         return CODE_OK;
     }
     case COMMAND_SET_VALUE:
     {
+        // First try to create a new ndoe with the string that has been provided
         // Create a new node with the string that has been provided
         Node *new = read_from_string(&parsedCommand->data.setValueData.value);
         if (!new)
         {
             return CODE_SYNTAX_ERROR;
         }
-        // Get the path to the original node
-        JsonPath originalPath = parsedCommand->data.setValueData.path;
-        // Try to find the node
-        // TODO: this has to be done recursively
-        Node *node = json_path_get(&originalPath, root);
-        if (!node)
+        // Get the json path that was provided by the user
+        JsonPath jsonPath = parsedCommand->path;
+        // Iterate over all the possible paths returned
+        for (size_t i = 0, n = vector_size(jsonPath.paths); i < n; i++)
         {
-            // In this case, the node has to be appended, so first go back one
-            // element in the path
-            JsonPath *previousPath = json_path_decrease(&originalPath);
-            // Try to find this node
-            Node *previousNode = json_path_get(previousPath, root);
-            if (!previousNode)
+            // Get the current path, which is a vector of steps
+            Vector *steps = vector_at(jsonPath.paths, i);
+            // Point to the node at the end of the path, in this case
+            // we are not allowed to create nodes along the way
+            Node *node = traverse(root, steps, true);
+            if (!node)
             {
                 return CODE_LOGIC_ERROR;
             }
-            // Get the key of the new node
-            String *key = json_path_leaf(&originalPath);
-            // Append to the parent
-            return node_append(previousNode, key, new);
-        }
-        else
-        {
-            return node_set_data(node, new);
+            // Now we are pointing to the node we want, so set the value
+            if (node_set_data(node, new) != CODE_OK)
+            {
+                return CODE_LOGIC_ERROR;
+            }
         }
         return CODE_OK;
     }
     case COMMAND_ERASE:
     {
-        // Get the path of the node we want to erase
-        JsonPath path = parsedCommand->data.eraseData.path;
-        // Try to find the node in the tree
-        Node *node = json_path_get(&path, root);
-        if (!node)
+        // Get the json path that was provided by the user
+        JsonPath jsonPath = parsedCommand->path;
+        // Iterate over all the possible paths returned
+        for (size_t i = 0, n = vector_size(jsonPath.paths); i < n; i++)
         {
-            return CODE_MEMORY_ERROR;
+            // Get the current path, which is a vector of steps
+            Vector *steps = vector_at(jsonPath.paths, i);
+            // Point to the node at the end of the path, in this case
+            // we are not allowed to create nodes along the way
+            Node *node = traverse(root, steps, false);
+            if (!node)
+            {
+                return CODE_LOGIC_ERROR;
+            }
+            // Now we are pointing to the node we want, so erase it
+            if (node_erase(node) != CODE_OK)
+            {
+                return CODE_LOGIC_ERROR;
+            }
         }
-        // Remove this node
-        return node_erase(node->parent, json_path_leaf(&path));
+        return CODE_OK;
     }
     }
+}
+
+Node *traverse(Node *node, const Vector *steps, const bool create)
+{
+    // Iterate over all the steps in this path
+    Node *child = NULL;
+    for (size_t j = 0, m = vector_size(steps); j < m; j++)
+    {
+        // Point to the current step
+        PathStep *step = vector_at(steps, j);
+        // Get the child, if possible
+        if (step->id == PATH_STEP_INDEX)
+        {
+            child = node_array_get(node, step->data.index);
+        }
+        else
+        {
+            child = node_get(node, &step->data.key);
+        }
+
+        if (!child)
+        {
+            if (create)
+            {
+                // If the node was not found, we need to create it here
+                child = node_create();
+                // And then add it to the parent
+                if (step->id == PATH_STEP_INDEX)
+                {
+                    // Create the iterators in order to insert
+                    Iterator begin = iterator_create(child, sizeof(Node *));
+                    Iterator end = iterator_increase(begin, 1);
+                    Iterator destination = iterator_increase(vector_begin((Vector *)node->data), step->data.index);
+                    node_array_insert(node, begin, end, destination);
+                }
+                else
+                {
+                    node_append(node, &step->data.key, child);
+                }
+            }
+            else
+            {
+                // We are not allowed to create any node, so we have found a step
+                // were the path does not lead enywhere
+                return NULL;
+            }
+        }
+
+        // Now we need to point to the child
+        node = child;
+    }
+
+    // Final node
+    return node;
 }

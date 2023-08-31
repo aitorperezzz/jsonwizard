@@ -15,26 +15,18 @@ enum Command
 
 struct CommandSetValueData
 {
-    JsonPath path;
     String value;
 };
 
 struct CommandSetKeyData
 {
-    JsonPath path;
     String key;
-};
-
-struct CommandEraseData
-{
-    JsonPath path;
 };
 
 union CommandData
 {
     struct CommandSetValueData setValueData;
     struct CommandSetKeyData setKeyData;
-    struct CommandEraseData eraseData;
 };
 
 typedef struct ParsedCommand_st
@@ -42,6 +34,7 @@ typedef struct ParsedCommand_st
     Vector *words;
     String *filename;
     enum Command command;
+    JsonPath path;
     union CommandData data;
 } ParsedCommand;
 

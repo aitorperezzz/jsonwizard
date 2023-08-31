@@ -18,9 +18,8 @@ typedef struct Iterator_st
 Iterator iterator_create(void *pointer, const size_t size);
 
 /// @brief Returns an invalid iterator, pointer is NULL and size is zero
-/// @param
 /// @return Invalid iterator
-Iterator iterator_invalidIterator(void);
+Iterator iterator_invalid(void);
 
 /// @brief Copies from first to last, into the iterator provided in result
 /// The result iterator shall not point to an element between first and last

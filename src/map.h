@@ -6,20 +6,19 @@
 #include "utils.h"
 #include "iterator.h"
 #include "vector.h"
-#include "string_type.h"
 
-struct FreeFunctionsClosure
+struct FreeCallbacksClosure
 {
     ResultCode (*keyFreeCallback)(void *);
     ResultCode (*valueFreeCallback)(void *);
 };
 
-typedef struct MapElement_st
+typedef struct Pair_st
 {
     void *key;
     void *value;
-    struct FreeFunctionsClosure closure;
-} MapElement;
+    struct FreeCallbacksClosure closure;
+} Pair;
 
 /// @brief Definition of the contents of a vector
 typedef struct Map_st
@@ -27,7 +26,7 @@ typedef struct Map_st
     Vector *elements;
     size_t keySize;
     size_t valueSize;
-    struct FreeFunctionsClosure closure;
+    struct FreeCallbacksClosure closure;
     bool (*keyCompareCallback)(const void *, const void *);
     void *(*keyCopyCallback)(const void *);
     void *(*valueCopyCallback)(const void *);
@@ -42,7 +41,7 @@ Map *map_create(const size_t keySize, const size_t valueSize,
 
 void *map_at(Map *map, const void *key);
 
-Iterator map_find(const Map *map, const String *key);
+Iterator map_find(const Map *map, const void *key);
 
 Iterator map_begin(const Map *map);
 

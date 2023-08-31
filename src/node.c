@@ -98,36 +98,58 @@ ResultCode node_append(Node *node, const String *key, const Node *child)
     return CODE_OK;
 }
 
-ResultCode node_erase(Node *node, const String *key)
+ResultCode node_erase(Node *node)
 {
-    if (node == NULL || key == NULL)
+    if (node == NULL)
     {
         return CODE_MEMORY_ERROR;
     }
 
-    // This function can only be used if the node is of type object
-    if (node->type != NODE_TYPE_OBJECT)
+    // If this node has no parent, I cannot continue
+    if (node->parent == NULL)
     {
-        return CODE_LOGIC_ERROR;
+        return CODE_MEMORY_ERROR;
     }
 
-    // Check if the key can be found inside this node
-    Map *map = node->data;
-    Iterator iterator = map_find(map, key);
-    Iterator end = map_end(map);
-    if (iterator_equal(iterator, end))
+    switch (node->parent->type)
     {
+    case NODE_TYPE_NULL:
+    case NODE_TYPE_BOOLEAN:
+    case NODE_TYPE_NUMBER:
+    case NODE_TYPE_STRING:
+        return CODE_MEMORY_ERROR;
+    case NODE_TYPE_ARRAY:
+    {
+        Vector *vector = node->parent->data;
+        for (Iterator begin = vector_begin(vector), end = vector_end(vector);
+             !iterator_equal(begin, end);
+             iterator_increase(begin, 1))
+        {
+            if (iterator_get(begin) == node)
+            {
+                // This is the one that needs to be removed
+                return vector_erase(vector, begin, iterator_increase(begin, 1));
+            }
+        }
         return CODE_LOGIC_ERROR;
     }
-
-    // Remove the element at the iterator just found
-    Iterator last = iterator_increase(iterator, 1);
-    if (map_erase(map, iterator, last) != CODE_OK)
+    case NODE_TYPE_OBJECT:
     {
+        Map *map = node->parent->data;
+        for (Iterator begin = map_begin(map), end = map_end(map);
+             !iterator_equal(begin, end);
+             iterator_increase(begin, 1))
+        {
+            Pair *pair = iterator_get(begin);
+            if (pair->value == node)
+            {
+                // This is the one that needs to be removed
+                return map_erase(map, begin, iterator_increase(begin, 1));
+            }
+        }
         return CODE_LOGIC_ERROR;
     }
-
-    return CODE_OK;
+    }
 }
 
 ResultCode node_set_key(Node *node, const String *key)
@@ -153,11 +175,11 @@ ResultCode node_set_key(Node *node, const String *key)
     Map *map = node->parent->data;
     for (size_t i = 0, n = map_size(map); i < n; i++)
     {
-        MapElement *element = vector_at(map->elements, i);
-        if (element->value == node)
+        Pair *pair = vector_at(map->elements, i);
+        if (pair->value == node)
         {
             // Change the key here because we know the index
-            element->key = string_copy(key);
+            pair->key = string_copy(key);
             return CODE_OK;
         }
     }
@@ -207,11 +229,11 @@ Iterator node_array_begin(Node *node)
 {
     if (node == NULL)
     {
-        return iterator_invalidIterator();
+        return iterator_invalid();
     }
     if (node->type != NODE_TYPE_ARRAY)
     {
-        return iterator_invalidIterator();
+        return iterator_invalid();
     }
 
     Vector *vector = node->data;
@@ -222,11 +244,11 @@ Iterator node_array_end(Node *node)
 {
     if (node == NULL)
     {
-        return iterator_invalidIterator();
+        return iterator_invalid();
     }
     if (node->type != NODE_TYPE_ARRAY)
     {
-        return iterator_invalidIterator();
+        return iterator_invalid();
     }
 
     Vector *vector = node->data;
@@ -260,6 +282,11 @@ size_t node_array_size(Node *node)
     }
 
     return vector_size(node->data);
+}
+
+Node *node_array_get(Node *node, size_t index)
+{
+    return NULL;
 }
 
 ResultCode node_free(Node *node)

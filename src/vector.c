@@ -159,7 +159,7 @@ Iterator vector_begin(const Vector *vector)
     if (vector == NULL || vector->data == NULL)
     {
         printf("Cannot create begin iterator\n");
-        return iterator_invalidIterator();
+        return iterator_invalid();
     }
     return iterator_create(vector->data, vector->elementSize);
 }
@@ -169,7 +169,7 @@ Iterator vector_end(const Vector *vector)
     if (vector == NULL || vector->data == NULL)
     {
         printf("Cannot create end iterator\n");
-        return iterator_invalidIterator();
+        return iterator_invalid();
     }
     return iterator_create(vector->data + vector->size * vector->elementSize, vector->elementSize);
 }

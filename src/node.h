@@ -37,7 +37,7 @@ Node *node_get(Node *node, const String *key);
 
 ResultCode node_append(Node *node, const String *key, const Node *child);
 
-ResultCode node_erase(Node *node, const String *key);
+ResultCode node_erase(Node *node);
 
 ResultCode node_set_key(Node *node, const String *key);
 
@@ -52,6 +52,8 @@ Iterator node_array_end(Node *node);
 ResultCode node_array_insert(Node *node, Iterator first, Iterator last, Iterator destination);
 
 size_t node_array_size(Node *node);
+
+Node *node_array_get(Node *node, size_t index);
 
 ResultCode node_free(Node *node);
 

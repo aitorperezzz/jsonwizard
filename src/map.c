@@ -4,15 +4,28 @@
 #include "map.h"
 #include "vector.h"
 
-ResultCode map_element_free(void *mapElement)
+static ResultCode map_freePair(void *pairRaw)
 {
-    MapElement *structMapElement = mapElement;
-    if (structMapElement->closure.keyFreeCallback == NULL || structMapElement->closure.valueFreeCallback == NULL)
+    if (!pairRaw)
     {
-        return CODE_MEMORY_ERROR;
+        return CODE_OK;
     }
-    structMapElement->closure.keyFreeCallback(structMapElement->key);
-    structMapElement->closure.valueFreeCallback(structMapElement->value);
+    Pair *pair = pairRaw;
+    // Call the free callbacks if they are available
+    if (pair->closure.keyFreeCallback != NULL)
+    {
+        if (pair->closure.keyFreeCallback(pair->key) != CODE_OK)
+        {
+            return CODE_MEMORY_ERROR;
+        }
+    }
+    if (pair->closure.valueFreeCallback != NULL)
+    {
+        if (pair->closure.valueFreeCallback(pair->value) != CODE_OK)
+        {
+            return CODE_MEMORY_ERROR;
+        }
+    }
     return CODE_OK;
 }
 
@@ -35,14 +48,13 @@ Map *map_create(const size_t keySize, const size_t valueSize,
     map->keyCompareCallback = keyCompareCallback;
     map->keyCopyCallback = keyCopyCallback;
     map->valueCopyCallback = valueCopyCallback;
-
     // Create the closure of the map, that stores the two callbacks needed to free
     // the key and the value respectively
     map->closure.keyFreeCallback = keyFreeCallback;
     map->closure.valueFreeCallback = valueFreeCallback;
 
-    // Create the elements as a vector of map elements
-    map->elements = vector_create(sizeof(MapElement), map_element_free);
+    // Create the elements as a vector of pairs
+    map->elements = vector_create(sizeof(Pair), map_freePair);
     if (map->elements == NULL)
     {
         return NULL;
@@ -57,33 +69,43 @@ void *map_at(Map *map, const void *key)
         return NULL;
     }
 
-    // Iterate over the values of the internal vector
-    MapElement *element;
-    for (size_t i = 0, n = vector_size(map->elements); i < n; i++)
+    // Find the element
+    Iterator pairIterator = map_find(map, key);
+    if (iterator_equal(pairIterator, iterator_invalid()))
     {
-        element = vector_at(map->elements, i);
-        // Check if this key is the one provided
-        if (map->keyCompareCallback(element->key, key) == 0)
-        {
-            return element->value;
-        }
+        return NULL;
     }
-
-    // The provided key has not been found in the map
-    return NULL;
+    return ((Pair *)iterator_get(pairIterator))->value;
 }
 
-Iterator map_find(const Map *map, const String *key)
+Iterator map_find(const Map *map, const void *key)
 {
-    // TODO
-    return iterator_invalidIterator();
+    if (map == NULL || key == NULL)
+    {
+        return iterator_invalid();
+    }
+
+    // Iterate over the values of the internal vector
+    Pair *pair;
+    Vector *elements = map->elements;
+    for (size_t i = 0, n = vector_size(elements); i < n; i++)
+    {
+        // Access the current pair
+        pair = vector_at(elements, i);
+        // Check if this key is the same as the one provided
+        if (map->keyCompareCallback(pair->key, key) == 0)
+        {
+            return iterator_create(pair, sizeof(pair));
+        }
+    }
+    return iterator_invalid();
 }
 
 Iterator map_begin(const Map *map)
 {
     if (map == NULL)
     {
-        return iterator_invalidIterator();
+        return iterator_invalid();
     }
     return vector_begin(map->elements);
 }
@@ -92,7 +114,7 @@ Iterator map_end(const Map *map)
 {
     if (map == NULL)
     {
-        return iterator_invalidIterator();
+        return iterator_invalid();
     }
     return vector_end(map->elements);
 }
@@ -101,7 +123,7 @@ bool map_empty(const Map *map)
 {
     if (map == NULL)
     {
-        return false;
+        return true;
     }
     return vector_empty(map->elements);
 }
@@ -110,7 +132,7 @@ size_t map_size(const Map *map)
 {
     if (map == NULL)
     {
-        return false;
+        return 0;
     }
     return vector_size(map->elements);
 }
@@ -134,19 +156,19 @@ Iterator map_insert(Map *map, const void *key, const void *value)
 {
     if (map == NULL || key == NULL || value == NULL)
     {
-        return iterator_invalidIterator();
+        return iterator_invalid();
     }
 
-    // Create the new element to push to the map
-    MapElement element;
-    element.key = map->keyCopyCallback(key);
-    element.value = map->valueCopyCallback(value);
+    // Create the new pair to push to the map
+    Pair pair;
+    pair.key = map->keyCopyCallback(key);
+    pair.value = map->valueCopyCallback(value);
     // Copy the callbacks in the closure
-    element.closure.keyFreeCallback = map->closure.keyFreeCallback;
-    element.closure.valueFreeCallback = map->closure.valueFreeCallback;
-    if (vector_push(map->elements, &element) != CODE_OK)
+    pair.closure.keyFreeCallback = map->closure.keyFreeCallback;
+    pair.closure.valueFreeCallback = map->closure.valueFreeCallback;
+    if (vector_push(map->elements, &pair) != CODE_OK)
     {
-        return iterator_invalidIterator();
+        return iterator_invalid();
     }
 
     // Return an iterator to the last element we have pushed
@@ -168,7 +190,7 @@ ResultCode map_free(Map *map)
 {
     if (map == NULL)
     {
-        return CODE_MEMORY_ERROR;
+        return CODE_OK;
     }
 
     // Free the internal vector
