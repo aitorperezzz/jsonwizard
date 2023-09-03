@@ -5,60 +5,63 @@
 
 #include "utils.h"
 
-/// @brief Definition of a string
+/// @brief String
 typedef struct String_st
 {
-    char *buffer;
-    int length;
-    int capacity;
+    char *buffer; // Internal C string
+    int length;   // Number of characters
+    int capacity; // Number of bytes reserved in the internal buffer
 } String;
 
-/// @brief Create a string type
-/// @return Pointer to a string structure initialised as an empty string, or NULL if
-/// a problem was encountered
+/// @brief Create an empty string
+/// @retval Pointer to a string structure initialised as an empty string
+/// @retval NULL if a problem was encountered
 String *string_create(void);
 
-/// @brief Create a string structure from an already existing C string
-/// @param literal Already existing C string
-/// @return Pointer to a string structure
+/// @brief Create a string from an already existing C string
+/// @param literal Pointer to an already existing C string
+/// @retval Pointer to a string that holds the same values as the original C string
+/// @retval NULL if a problem was encountered
 String *string_createFromLiteral(const char *literal);
 
-/// @brief Returns the size of the internal string in a string structure
-/// @param string String structure
-/// @return Length of the string
+/// @brief Create a string from a provided buffer with a specified size
+/// @param origin Original buffer
+/// @param size Number of characters to copy from the buffer
+/// @retval String that holds the same characters as the provided buffer
+/// @retval NULL if a problem was encountered
+String *string_createFromBuffer(const char *origin, const size_t size);
+
+/// @brief Return the number of characters in the provided string
+/// @param string String
+/// @return Number of characters in the string
 size_t string_length(const String *string);
 
-/// @brief Returns the internal buffer of the string
-/// @param string String structure
-/// @return Internal char * buffer of the string
+/// @brief Return the internal NULL-terminated C string
+/// @param string String
+/// @retval Internal char * buffer of the string
+/// @retval NULL if a problem was encountered
 const char *string_cStr(const String *string);
 
-/// @brief Access a character in a string, by index
-/// @param string String structure
-/// @param index Index of the character to retrieve
+/// @brief Return the character in the string at the specified index.
+/// This function does not perform range checking.
+/// @param string String
+/// @param index Index of the character to retrieve. Be careful to provide an index in bounds
 /// @return The required character
 char string_at(const String *string, const size_t index);
 
-/// @brief Copies the provided string to another, already existing, string
-/// @param destination Already existing destination string
-/// @param origin Already existing origin string
-/// @return Result code
+/// @brief Return an exact copy of the provided string
+/// @param original An already existing string
+/// @retval Copy of the original string
+/// @retval NULL if a problem was encountered
 String *string_copy(const String *original);
 
-/// @brief Copy a string from a buffer
-/// @param destination Already existing destination string
-/// @param origin Original buffer
-/// @param size NUmber of characters to copy from the buffer
-/// @return Result code
-String *string_copyFromBuffer(const char *origin, const size_t size);
-
-/// @brief Compare the provided strings, essentially wrapping strcmp
+/// @brief Compare the provided strings with the same return value as strcmp
 /// @param string1 Frist string to compare
 /// @param string2 Second string to compare
-/// @return Value returned by strcmp
+/// @retval Same return value as strcmp
 int string_compare(const String *string1, const String *string2);
 
-/// @brief Join two strings in place, place the joined string on the first argument
+/// @brief Join the second string provied to the first one
 /// @param string1 String where the final sum of the two will be stored
 /// @param string2 String to join to the first one
 /// @return Result code
@@ -67,18 +70,20 @@ ResultCode string_joinInPlace(String *string1, const String *string2);
 /// @brief Join two strings and return the result
 /// @param string1 First string to join
 /// @param string2 Second string to join
-/// @return Resulting string
+/// @retval The string that is the concatenation of the two
+/// @retval NULL if a problem was encountered
 String *string_join(const String *string1, const String *string2);
 
-/// @brief Frees all the internal memory used by the string, prior to call free() or to create a new one
-/// @param string String structure
-ResultCode string_free(void *string);
-
-/// @brief Reserve, ahead of time, a number of bytes for the string, to prevent many
+/// @brief Reserve, ahead of time, a number of bytes for the string, to prevent
 /// reallocations when the size of the final string is known
-/// @param string String structure
-/// @param capacity Number of bytes with the final capacity of the string
+/// @param string String
+/// @param capacity Final requested capacity of the string in bytes
 /// @return Result code
 ResultCode string_reserve(String *string, const size_t capacity);
+
+/// @brief Free all the internal memory used by the string
+/// @param string Raw pointer that in reality points to a String type
+/// @return Result code
+ResultCode string_free(void *string);
 
 #endif

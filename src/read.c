@@ -152,7 +152,7 @@ static String *jsonFileToString(FILE *file)
         position++;
     }
 
-    String *result = string_copyFromBuffer(buffer, strlen(buffer));
+    String *result = string_createFromBuffer(buffer, strlen(buffer));
     free(buffer);
     return result;
 }
@@ -190,7 +190,7 @@ static Node *parseNode(const String *string)
     size_t keyLength = (string_cStr(string), length);
 
     // Store the key.
-    String *key = string_copyFromBuffer(string_cStr(string), keyLength);
+    String *key = string_createFromBuffer(string_cStr(string), keyLength);
 
     // Get the position of the value in the node.
     position = keyLength + 3;
@@ -209,7 +209,7 @@ static Node *parseNode(const String *string)
     {
         // This is a string node.
         valueLength = length - position - 2;
-        String *value = string_copyFromBuffer(string_cStr(string) + position + 1, valueLength);
+        String *value = string_createFromBuffer(string_cStr(string) + position + 1, valueLength);
 
         // Update node information.
         setType(node, NODE_TYPE_STRING);
@@ -219,7 +219,7 @@ static Node *parseNode(const String *string)
     {
         // This is an integer node.
         valueLength = length - position;
-        String *numberString = string_copyFromBuffer(string_cStr(string) + position, valueLength);
+        String *numberString = string_createFromBuffer(string_cStr(string) + position, valueLength);
 
         // Update node information.
         setType(node, NODE_TYPE_NUMBER);
@@ -272,7 +272,7 @@ static Node *parseNode(const String *string)
             if (childSize > 0)
             {
                 // A new node exists.
-                String *nodeString = string_copyFromBuffer(string_cStr(string) + pointer, childSize);
+                String *nodeString = string_createFromBuffer(string_cStr(string) + pointer, childSize);
 
                 newNode = parseNode(nodeString);
                 if (newNode == NULL)

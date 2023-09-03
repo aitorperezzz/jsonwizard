@@ -59,26 +59,7 @@ String *string_createFromLiteral(const char *literal)
     return result;
 }
 
-size_t string_length(const String *string)
-{
-    return string->length;
-}
-
-char string_at(const String *string, const size_t index)
-{
-    return string->buffer[index];
-}
-
-String *string_copy(const String *original)
-{
-    if (original == NULL)
-    {
-        return NULL;
-    }
-    return string_copyFromBuffer(original->buffer, original->length);
-}
-
-String *string_copyFromBuffer(const char *origin, const size_t size)
+String *string_createFromBuffer(const char *origin, const size_t size)
 {
     if (origin == NULL)
     {
@@ -103,6 +84,30 @@ String *string_copyFromBuffer(const char *origin, const size_t size)
     destination->length = size;
     destination->capacity = size + 1;
     return destination;
+}
+
+size_t string_length(const String *string)
+{
+    return string->length;
+}
+
+const char *string_cStr(const String *string)
+{
+    return string->buffer;
+}
+
+char string_at(const String *string, const size_t index)
+{
+    return string->buffer[index];
+}
+
+String *string_copy(const String *original)
+{
+    if (original == NULL)
+    {
+        return NULL;
+    }
+    return string_createFromBuffer(original->buffer, original->length);
 }
 
 int string_compare(const String *string1, const String *string2)
@@ -158,26 +163,9 @@ String *string_join(const String *string1, const String *string2)
     {
         return NULL;
     }
-    String *result = string_copyFromBuffer(string1->buffer, string1->length);
+    String *result = string_createFromBuffer(string1->buffer, string1->length);
     string_joinInPlace(result, string2);
     return result;
-}
-
-ResultCode string_free(void *string)
-{
-    if (string == NULL)
-    {
-        return CODE_MEMORY_ERROR;
-    }
-    String *mystring = (String *)string;
-    if (mystring->buffer != NULL)
-    {
-        free(mystring->buffer);
-    }
-    mystring->buffer = NULL;
-    mystring->length = 0;
-    mystring->capacity = 0;
-    return CODE_OK;
 }
 
 ResultCode string_reserve(String *string, const size_t capacity)
@@ -202,7 +190,19 @@ ResultCode string_reserve(String *string, const size_t capacity)
     return CODE_OK;
 }
 
-const char *string_cStr(const String *string)
+ResultCode string_free(void *string)
 {
-    return string->buffer;
+    if (string == NULL)
+    {
+        return CODE_MEMORY_ERROR;
+    }
+    String *mystring = (String *)string;
+    if (mystring->buffer != NULL)
+    {
+        free(mystring->buffer);
+    }
+    mystring->buffer = NULL;
+    mystring->length = 0;
+    mystring->capacity = 0;
+    return CODE_OK;
 }
