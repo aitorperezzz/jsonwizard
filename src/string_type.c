@@ -194,7 +194,7 @@ ResultCode string_free(void *string)
 {
     if (string == NULL)
     {
-        return CODE_MEMORY_ERROR;
+        return CODE_OK;
     }
     String *mystring = (String *)string;
     if (mystring->buffer != NULL)

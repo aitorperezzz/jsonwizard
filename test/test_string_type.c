@@ -287,8 +287,66 @@ static void test_string_type_join(void **state)
 
 static void test_string_type_reserve(void **state)
 {
+    // Test reserve from empty string
+    String *string = string_create();
+    assert_int_equal(string_reserve(string, 1000), CODE_OK);
+    assert_int_equal(string->capacity, 1000);
+    assert_int_equal(string->length, 0);
+    assert_string_equal(string->buffer, "");
+    string_free(string);
+    free(string);
+
+    // Test reserve from populated string
+    string = string_createFromLiteral("hello");
+    assert_int_equal(string_reserve(string, 1000), CODE_OK);
+    assert_int_equal(string->capacity, 1000);
+    assert_int_equal(string->length, 5);
+    assert_string_equal(string->buffer, "hello");
+    string_free(string);
+    free(string);
+
+    // Test no need to reserve
+    string = string_createFromLiteral("hello");
+    assert_int_equal(string_reserve(string, 2), CODE_OK);
+    assert_int_equal(string->capacity, 6);
+    assert_int_equal(string->length, 5);
+    assert_string_equal(string->buffer, "hello");
+    string_free(string);
+    free(string);
+
+    // Test invalid parameter
+    assert_int_equal(string_reserve(NULL, 1000), CODE_MEMORY_ERROR);
 }
 
 static void test_string_type_free(void **state)
 {
+    // Test valid string
+    String *string = string_createFromLiteral("hello");
+    assert_int_equal(string_free(string), CODE_OK);
+    assert_ptr_equal(string->buffer, NULL);
+    assert_ptr_equal(string->capacity, 0);
+    assert_ptr_equal(string->length, 0);
+    free(string);
+
+    // Test empty string
+    string = string_createFromLiteral("");
+    assert_int_equal(string_free(string), CODE_OK);
+    assert_ptr_equal(string->buffer, NULL);
+    assert_ptr_equal(string->capacity, 0);
+    assert_ptr_equal(string->length, 0);
+    free(string);
+
+    // Test internal NULL string
+    string = malloc(sizeof(String));
+    string->buffer = NULL;
+    string->capacity = 0;
+    string->length = 0;
+    assert_int_equal(string_free(string), CODE_OK);
+    assert_ptr_equal(string->buffer, NULL);
+    assert_ptr_equal(string->capacity, 0);
+    assert_ptr_equal(string->length, 0);
+    free(string);
+
+    // Test NULL parameter
+    assert_int_equal(string_free(NULL), CODE_OK);
 }
