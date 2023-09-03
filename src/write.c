@@ -6,55 +6,51 @@
 #include "vector.h"
 #include "set.h"
 
-static ResultCode print_node(FILE *file, const Node *node, size_t offset, int isLast);
+static String *write_node(const Node *node, size_t offset, bool isLast);
 static ResultCode add_blanks(String *string, size_t number);
 
 ResultCode write_to_file(const Node *node, const String *filename)
 {
+    // Create a string with the contents of the node
+    String *string = write_node(node, 0, true);
+    if (string == NULL)
+    {
+        return CODE_LOGIC_ERROR;
+    }
+
     // Concatenate .json to the name of the file.
     String *name = string_join(filename, string_createFromLiteral(".json"));
 
-    // Open the file in write mode.
+    // Write the string to the file
     FILE *file = fopen(string_cStr(name), "w");
     if (file == NULL)
     {
         printf("ERROR: Could not open a file to write to.\n");
         return CODE_ERROR;
     }
-
-    // Print the root struct Node to the file.
-    print_node(file, node, 0, 1);
-
-    // Close the file.
+    fputs(string_cStr(string), file);
     fclose(file);
     return CODE_OK;
 }
-ResultCode write_to_stdout(const Node *node)
+
+String *write_to_string(const Node *node)
 {
     if (node == NULL)
     {
         printf("ERROR: Cannot print to stdin. Root is NULL.\n");
-        return CODE_ERROR;
+        return NULL;
     }
 
-    return print_node(stdout, node, 0, 1);
+    return write_node(node, 0, true);
 }
 
-// Prints a single node (recursive function).
-// If file != NULL, print to file.
-// If file == NULL, print to stdin.
-static ResultCode print_node(FILE *file, const Node *node, size_t offset, int isLast)
+static String *write_node(const Node *node, size_t offset, bool isLast)
 {
     // Check inputs
-    if (file == NULL)
-    {
-        printf("ERROR: file pointer provided is NULL");
-        return CODE_MEMORY_ERROR;
-    }
     if (node == NULL)
     {
         printf("ERROR: node provided is NULL");
-        return CODE_MEMORY_ERROR;
+        return NULL;
     }
 
     // Create a buffer for the line to be written.
@@ -63,7 +59,7 @@ static ResultCode print_node(FILE *file, const Node *node, size_t offset, int is
     // Write the offset to the buffer.
     if (add_blanks(buffer, offset) != CODE_OK)
     {
-        return CODE_WRITE_ERROR;
+        return NULL;
     }
 
     // Decide according to type
@@ -103,16 +99,15 @@ static ResultCode print_node(FILE *file, const Node *node, size_t offset, int is
         // Open the object and write the current buffer contents as this is a
         // recursive function
         buffer = string_copy(string_createFromLiteral("{\n"));
-        fprintf(file, "%s", string_cStr(buffer));
 
         // Call this function recursively on its childs.
         Vector *children = (Vector *)node->data;
-        int newLast;
+        // int newLast;
         const size_t size = vector_size(children);
         for (size_t i = 0; i < size; i++)
         {
-            newLast = i == size - 1 ? 1 : 0;
-            print_node(file, vector_at(children, i), offset + 1, newLast);
+            // newLast = i == size - 1 ? 1 : 0;
+            // print_node(file, vector_at(children, i), offset + 1, newLast);
         }
 
         // Write the last line that all object nodes finish with
@@ -127,8 +122,7 @@ static ResultCode print_node(FILE *file, const Node *node, size_t offset, int is
     {
         buffer = string_copy(string_createFromLiteral(","));
     }
-    fprintf(file, "%s\n", string_cStr(buffer));
-    return CODE_OK;
+    return NULL;
 }
 
 // Writes blank spaces to a string.

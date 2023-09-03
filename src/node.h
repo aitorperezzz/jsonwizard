@@ -55,8 +55,6 @@ size_t node_array_size(Node *node);
 
 Node *node_array_get(Node *node, size_t index);
 
-ResultCode node_free(Node *node);
-
-ResultCode node_free_raw(void *rawNode);
+ResultCode node_free(void *node);
 
 #endif
