@@ -5,70 +5,111 @@
 static void test_string_type_create(void **state)
 {
     String *string = string_create();
-    const size_t expectedLength = 0;
+    assert_ptr_not_equal(string, NULL);
+    assert_ptr_not_equal(string->buffer, NULL);
     assert_string_equal(string->buffer, "");
-    assert_int_equal(strlen(string->buffer), expectedLength);
-    assert_int_equal(string->length, expectedLength);
-    assert_int_equal(string->capacity, expectedLength + 1);
+    assert_int_equal(strlen(string->buffer), 0);
+    assert_int_equal(string->length, 0);
+    assert_int_equal(string->capacity, 1);
     string_free(string);
     free(string);
 }
 
 static void test_string_type_createFromLiteral(void **state)
 {
+    // Test correct value
     const char *literal = "My literal string";
     const size_t expectedLength = strlen(literal);
     String *string = string_createFromLiteral(literal);
+    assert_ptr_not_equal(string, NULL);
+    assert_ptr_not_equal(string->buffer, NULL);
     assert_string_equal(string->buffer, literal);
     assert_int_equal(strlen(string->buffer), expectedLength);
     assert_int_equal(string->length, expectedLength);
     assert_int_equal(string->capacity, expectedLength + 1);
     string_free(string);
     free(string);
+
+    // Test invalid value
+    string = string_createFromLiteral(NULL);
+    assert_ptr_equal(string, NULL);
 }
 
 static void test_string_type_createFromBuffer(void **state)
 {
-    String *string1, *string2;
+    String *string2;
 
-    // Test strings with OK values
-    string1 = string_createFromLiteral("My literal string");
-    string2 = string_createFromBuffer(string1->buffer, string1->length);
-    assert_string_equal(string2->buffer, string1->buffer);
-    assert_int_equal(string2->length, string1->length);
-    assert_int_equal(string2->capacity, string1->capacity);
-    string_free(string1);
+    // Test correct value
+    const char *string1 = "My literal string";
+    string2 = string_createFromBuffer(string1, strlen(string1));
+    assert_ptr_not_equal(string2, NULL);
+    assert_ptr_not_equal(string2->buffer, NULL);
+    assert_string_equal(string2->buffer, string1);
+    assert_int_equal(string2->length, strlen(string1));
+    assert_int_equal(string2->capacity, strlen(string1) + 1);
     string_free(string2);
-    free(string1);
     free(string2);
+
+    // Test with buffer of length zero
+    string1 = "";
+    string2 = string_createFromBuffer(string1, 0);
+    assert_ptr_not_equal(string2, NULL);
+    assert_ptr_not_equal(string2->buffer, NULL);
+    assert_string_equal(string2->buffer, "");
+    assert_int_equal(string2->length, 0);
+    assert_int_equal(string2->capacity, 1);
+    string_free(string2);
+    free(string2);
+
+    // Test invalid values
+    string2 = string_createFromBuffer(NULL, 12);
+    assert_ptr_equal(string2, NULL);
 }
 
 static void test_string_type_length(void **state)
 {
+    // Test valid values
     const char *literal = "My literal string";
-    const size_t expectedLength = strlen(literal);
     String *string = string_createFromLiteral(literal);
-    assert_int_equal(string_length(string), expectedLength);
+    assert_int_equal(string_length(string), strlen(literal));
     string_free(string);
     free(string);
+
+    // Test empty string
+    string = string_createFromLiteral("");
+    assert_int_equal(string_length(string), 0);
+    string_free(string);
+    free(string);
+
+    // Test invalid values
+    assert_ptr_equal(string_length(NULL), 0);
 }
 
 static void test_string_type_cStr(void **state)
 {
-    const char *literal = "My literal string";
-    String *string = string_createFromLiteral(literal);
-    assert_int_equal(string_cStr(string), string->buffer);
+    // Test valid values
+    String *string = string_createFromLiteral("My literal string");
+    assert_ptr_equal(string_cStr(string), string->buffer);
     string_free(string);
     free(string);
+
+    // Test empty string
+    string = string_createFromLiteral("");
+    assert_ptr_equal(string_cStr(string), string->buffer);
+    string_free(string);
+    free(string);
+
+    // Test invalid parameter
+    assert_ptr_equal(string_cStr(NULL), NULL);
 }
 
 static void test_string_type_at(void **state)
 {
+    // Test valid value
     const char *literal = "My literal string";
     const size_t index = 6;
-    const char expectedChar = literal[index];
     String *string = string_createFromLiteral(literal);
-    assert_int_equal((int)string_at(string, index), (int)expectedChar);
+    assert_int_equal((int)string_at(string, index), (int)literal[index]);
     string_free(string);
     free(string);
 }
@@ -89,13 +130,7 @@ static void test_string_type_copy(void **state)
     free(string2);
 
     // Copy from a NULL string
-    string2 = NULL;
-    string1 = string_copy(string2);
-    assert_ptr_equal(string1, NULL);
-    string_free(string1);
-    string_free(string2);
-    free(string1);
-    free(string2);
+    assert_ptr_equal(string_copy(NULL), NULL);
 }
 
 static void test_string_type_compare(void **state)
@@ -117,16 +152,6 @@ static void test_string_type_compare(void **state)
     string2 = string_createFromLiteral("My literal string");
     result = string_compare(string1, string2);
     assert_int_equal(result, 0);
-    string_free(string1);
-    string_free(string2);
-    free(string1);
-    free(string2);
-
-    // Check strings with bad values
-    string1 = NULL;
-    string2 = string_create();
-    result = string_compare(string1, string2);
-    assert_int_not_equal(result, 0);
     string_free(string1);
     string_free(string2);
     free(string1);
@@ -181,6 +206,19 @@ static void test_string_type_joinInPlace(void **state)
     string_free(string2);
     free(string1);
     free(string2);
+
+    // Test some invalid values
+    string1 = string_create();
+    result = string_joinInPlace(string1, NULL);
+    assert_int_equal(result, CODE_MEMORY_ERROR);
+    string_free(string1);
+    free(string1);
+
+    string2 = string_create();
+    result = string_joinInPlace(NULL, string2);
+    assert_int_equal(result, CODE_MEMORY_ERROR);
+    string_free(string2);
+    free(string2);
 }
 
 static void test_string_type_join(void **state)
@@ -234,6 +272,17 @@ static void test_string_type_join(void **state)
     free(string1);
     free(string2);
     free(result);
+
+    // Test some invalid values
+    string1 = string_create();
+    assert_int_equal(string_join(string1, NULL), NULL);
+    string_free(string1);
+    free(string1);
+
+    string2 = string_create();
+    assert_int_equal(string_join(NULL, string2), NULL);
+    string_free(string2);
+    free(string2);
 }
 
 static void test_string_type_reserve(void **state)

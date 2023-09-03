@@ -6,21 +6,6 @@
 
 #include "utils.h"
 
-static String *string_createNonInitialised();
-
-String *string_createNonInitialised()
-{
-    String *result = malloc(sizeof(String));
-    if (result == NULL)
-    {
-        return NULL;
-    }
-    result->buffer = NULL;
-    result->length = 0;
-    result->capacity = 0;
-    return result;
-}
-
 String *string_create(void)
 {
     // Reserve memory for the structure itself
@@ -44,7 +29,22 @@ String *string_create(void)
 
 String *string_createFromLiteral(const char *literal)
 {
-    String *result = string_createNonInitialised();
+    if (literal == NULL)
+    {
+        return NULL;
+    }
+
+    // Create a non initialised string
+    String *result = malloc(sizeof(String));
+    if (result == NULL)
+    {
+        return NULL;
+    }
+    result->buffer = NULL;
+    result->length = 0;
+    result->capacity = 0;
+
+    // Directly reserve the necessary memory
     const size_t originalLength = strlen(literal);
     void *tmp = malloc(originalLength + 1);
     if (tmp == NULL)
@@ -54,8 +54,8 @@ String *string_createFromLiteral(const char *literal)
     result->buffer = tmp;
     memcpy(result->buffer, literal, originalLength);
     result->buffer[originalLength] = '\0';
-    result->capacity = originalLength + 1;
     result->length = originalLength;
+    result->capacity = originalLength + 1;
     return result;
 }
 
@@ -88,11 +88,19 @@ String *string_createFromBuffer(const char *origin, const size_t size)
 
 size_t string_length(const String *string)
 {
+    if (string == NULL)
+    {
+        return 0;
+    }
     return string->length;
 }
 
 const char *string_cStr(const String *string)
 {
+    if (string == NULL)
+    {
+        return NULL;
+    }
     return string->buffer;
 }
 
@@ -112,14 +120,6 @@ String *string_copy(const String *original)
 
 int string_compare(const String *string1, const String *string2)
 {
-    if (string1 == NULL || string2 == NULL)
-    {
-        return -1;
-    }
-    if (string_cStr(string1) == NULL || string_cStr(string2) == NULL)
-    {
-        return -1;
-    }
     return strcmp(string_cStr(string1), string_cStr(string2));
 }
 
