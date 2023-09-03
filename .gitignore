@@ -1,6 +1,6 @@
 **/**.d
 **/**.o
+**/*.dSYM
 jsonwizard
+testjsonwizard
 .DS_Store
-test/*
-!test/*.c

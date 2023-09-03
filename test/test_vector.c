@@ -1,11 +1,7 @@
-#include <stdarg.h>
-#include <stddef.h>
-#include <setjmp.h>
-#include <cmocka.h>
+#include <stdio.h>
 #include <assert.h>
 
-#include "vector.c"
-#include "iterator.c"
+#include "vector.h"
 
 static ResultCode noFree(void *data)
 {
@@ -53,7 +49,7 @@ static Vector *createStringVector(void)
     return vector;
 }
 
-static void test_create(void **state)
+static void test_vector_create(void **state)
 {
     Vector *vector = vector_create(sizeof(int), noFree);
     assert_ptr_equal(vector->data, NULL);
@@ -68,7 +64,7 @@ static void test_create(void **state)
     assert_ptr_equal(vector, NULL);
 }
 
-static void test_size(void **state)
+static void test_vector_size(void **state)
 {
     Vector *vector = createIntegerVector();
     assert_int_equal(vector_size(vector), vector->size);
@@ -87,7 +83,7 @@ static void test_size(void **state)
     assert_int_equal(vector_size(vector), 0);
 }
 
-static void test_push(void **state)
+static void test_vector_push(void **state)
 {
     Vector *vector = vector_create(sizeof(int), noFree);
     int number = 4;
@@ -113,7 +109,7 @@ static void test_push(void **state)
     assert_int_equal(vector_push(vector, &number2), CODE_MEMORY_ERROR);
 }
 
-static void test_clear(void **state)
+static void test_vector_clear(void **state)
 {
     Vector *vector = createIntegerVector();
     assert_int_equal(vector_clear(vector), CODE_OK);
@@ -131,7 +127,7 @@ static void test_clear(void **state)
     assert_int_equal(vector_clear(vector), CODE_MEMORY_ERROR);
 }
 
-static void test_freeVector(void **state)
+static void test_vector_free(void **state)
 {
     // Vector of integers
     Vector *integerVector = createIntegerVector();
@@ -144,7 +140,7 @@ static void test_freeVector(void **state)
     free(stringVector);
 }
 
-static void test_get(void **state)
+static void test_vector_get(void **state)
 {
     Vector *vector = createIntegerVector();
     int *extracted = vector_at(vector, 5);
@@ -158,7 +154,7 @@ static void test_get(void **state)
     assert_int_equal(vector_at(vector, 0), NULL);
 }
 
-static void test_set(void **state)
+static void test_vector_set(void **state)
 {
     Vector *vector = createIntegerVector();
     int modification = 257;
@@ -174,7 +170,7 @@ static void test_set(void **state)
     assert_int_equal(vector_set(vector, 0, &modification), CODE_MEMORY_ERROR);
 }
 
-static void test_begin(void **state)
+static void test_vector_begin(void **state)
 {
     Iterator begin;
 
@@ -198,7 +194,7 @@ static void test_begin(void **state)
     assert_int_equal(begin.size, 0);
 }
 
-static void test_end(void **state)
+static void test_vector_end(void **state)
 {
     Iterator end;
 
@@ -222,7 +218,7 @@ static void test_end(void **state)
     assert_int_equal(end.size, 0);
 }
 
-static void test_erase(void **state)
+static void test_vector_erase(void **state)
 {
     Vector *vector = NULL;
     Iterator first, last;
@@ -268,21 +264,4 @@ static void test_erase(void **state)
     }
     assert_int_equal(vector_free(vector), CODE_OK);
     free(vector);
-}
-
-int main(void)
-{
-    const struct CMUnitTest tests[] = {
-        cmocka_unit_test(test_create),
-        cmocka_unit_test(test_size),
-        cmocka_unit_test(test_push),
-        cmocka_unit_test(test_clear),
-        cmocka_unit_test(test_freeVector),
-        cmocka_unit_test(test_get),
-        cmocka_unit_test(test_set),
-        cmocka_unit_test(test_begin),
-        cmocka_unit_test(test_end),
-        cmocka_unit_test(test_erase),
-    };
-    return cmocka_run_group_tests(tests, NULL, NULL);
 }

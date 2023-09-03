@@ -1,43 +1,46 @@
 # Compiler
-CC=clang
+CC := clang
 
 # Compiler flags
-CFLAGS=-g -Wall -Werror -std=c11 -fsanitize=address
-CFLAGS_TEST=$(CFLAGS) -I./src
-LDFLAGS_TEST=-lcmocka -fsanitize=address
+CFLAGS := -g -Wall -Werror -std=c11 -fsanitize=address
+TEST_CFLAGS := $(CFLAGS) -I./src
+TEST_LDFLAGS := -lcmocka -fsanitize=address
 
 # List sources, objects and dependencies
-SOURCES=$(wildcard src/*.c)
-OBJECTS=$(patsubst src/%.c,src/%.o,$(SOURCES))
-DEPENDS=$(patsubst src/%.c,src/%.d,$(SOURCES))
+SOURCES := $(wildcard src/*.c)
+OBJECTS := $(patsubst src/%.c,src/%.o,$(SOURCES))
+DEPENDS := $(patsubst src/%.c,src/%.d,$(SOURCES))
+TARGET := jsonwizard
 
 # Lists for tests
-SOURCES_TEST=$(wildcard test/*.c)
-OBJECTS_TEST=$(patsubst test/%.c,test/%,$(SOURCES_TEST))
-
-# Compilation targets
-TARGET=jsonwizard
+TEST_SOURCES := test/test_main.c $(SOURCES)
+TEST_SOURCES := $(filter-out src/wizard.c, $(TEST_SOURCES))
+TEST_OBJECTS := $(patsubst %.c,%.o,$(TEST_SOURCES))
+TEST_DEPENDS := $(patsubst %.c,%.d,$(TEST_SOURCES))
+TEST_TARGET := testjsonwizard
 
 .phony: all clean test
 
 all: $(TARGET)
 
-test: $(OBJECTS) $(OBJECTS_TEST)
-	cd test ; \
-	./test_string_type ; \
-	./test_iterator ; \
-	./test_vector
+test: $(TEST_TARGET)
+	./$(TEST_TARGET)
 
 -include $(DEPENDS)
 
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJECTS) -o $(TARGET)
 
+-include $(TEST_DEPENDS)
+
+$(TEST_TARGET): $(TEST_OBJECTS)
+	$(CC) $(TEST_CFLAGS) $(TEST_LDFLAGS) $(TEST_OBJECTS) -o $(TEST_TARGET)
+
 src/%.o: src/%.c Makefile
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
-test/%: test/%.c Makefile
-	$(CC) $(CFLAGS_TEST) $(LDFLAGS_TEST) -MMD -MP $< -o $@
+test/%.o: test/%.c Makefile
+	$(CC) $(TEST_CFLAGS) -MMD -MP -c $< -o $@
 
 clean:
-	rm -f $(OBJECTS) $(TARGET) $(DEPENDS) $(OBJECTS_TEST)
+	rm -f $(OBJECTS) $(TARGET) $(DEPENDS) $(TEST_OBJECTS) $(TEST_TARGET) $(TEST_DEPENDS)

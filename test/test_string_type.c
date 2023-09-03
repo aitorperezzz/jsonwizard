@@ -1,11 +1,8 @@
-#include <stdarg.h>
-#include <stddef.h>
-#include <setjmp.h>
-#include <cmocka.h>
+#include <string.h>
 
-#include "string_type.c"
+#include "string_type.h"
 
-static void testCreate(void **state)
+static void test_string_type_create(void **state)
 {
     String *string = string_create();
     const size_t expectedLength = 0;
@@ -17,7 +14,7 @@ static void testCreate(void **state)
     free(string);
 }
 
-static void testCreateFromLiteral(void **state)
+static void test_string_type_createFromLiteral(void **state)
 {
     const char *literal = "My literal string";
     const size_t expectedLength = strlen(literal);
@@ -30,7 +27,7 @@ static void testCreateFromLiteral(void **state)
     free(string);
 }
 
-static void testGetLength(void **state)
+static void test_string_type_getLength(void **state)
 {
     const char *literal = "My literal string";
     const size_t expectedLength = strlen(literal);
@@ -40,7 +37,7 @@ static void testGetLength(void **state)
     free(string);
 }
 
-static void testGetBuffer(void **state)
+static void test_string_type_getBuffer(void **state)
 {
     const char *literal = "My literal string";
     String *string = string_createFromLiteral(literal);
@@ -49,7 +46,7 @@ static void testGetBuffer(void **state)
     free(string);
 }
 
-static void testGetChar(void **state)
+static void test_string_type_getChar(void **state)
 {
     const char *literal = "My literal string";
     const size_t index = 6;
@@ -60,7 +57,7 @@ static void testGetChar(void **state)
     free(string);
 }
 
-static void testCopy(void **state)
+static void test_string_type_copy(void **state)
 {
     String *string1, *string2;
 
@@ -85,7 +82,7 @@ static void testCopy(void **state)
     free(string2);
 }
 
-static void testCopyFromBuffer(void **state)
+static void test_string_type_copyFromBuffer(void **state)
 {
     String *string1, *string2;
 
@@ -101,7 +98,7 @@ static void testCopyFromBuffer(void **state)
     free(string2);
 }
 
-static void testCompare(void **state)
+static void test_string_type_compare(void **state)
 {
     String *string1, *string2;
     int result;
@@ -136,7 +133,7 @@ static void testCompare(void **state)
     free(string2);
 }
 
-static void testJoinInPlace(void **state)
+static void test_string_type_joinInPlace(void **state)
 {
     String *string1, *string2;
     ResultCode result;
@@ -186,7 +183,7 @@ static void testJoinInPlace(void **state)
     free(string2);
 }
 
-static void testJoin(void **state)
+static void test_string_type_join(void **state)
 {
     String *string1, *string2, *result;
 
@@ -237,21 +234,4 @@ static void testJoin(void **state)
     free(string1);
     free(string2);
     free(result);
-}
-
-int main(void)
-{
-    const struct CMUnitTest tests[] = {
-        cmocka_unit_test(testCreate),
-        cmocka_unit_test(testCreateFromLiteral),
-        cmocka_unit_test(testGetLength),
-        cmocka_unit_test(testGetBuffer),
-        cmocka_unit_test(testGetChar),
-        cmocka_unit_test(testCopy),
-        cmocka_unit_test(testCopyFromBuffer),
-        cmocka_unit_test(testCompare),
-        cmocka_unit_test(testJoinInPlace),
-        cmocka_unit_test(testJoin),
-    };
-    return cmocka_run_group_tests(tests, NULL, NULL);
 }

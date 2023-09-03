@@ -3,9 +3,9 @@
 #include <setjmp.h>
 #include <cmocka.h>
 
-#include "iterator.c"
+#include "iterator.h"
 
-static void test_create(void **state)
+static void test_iterator_create(void **state)
 {
     Iterator iterator = iterator_create((void *)0x25689, 16);
     assert_ptr_equal(iterator.pointer, 0x25689);
@@ -15,7 +15,7 @@ static void test_create(void **state)
     assert_int_equal(iterator.size, 16);
 }
 
-static void test_copy(void **state)
+static void test_iterator_copy(void **state)
 {
     // Create an array with data to copy from
     int origin[3];
@@ -44,7 +44,7 @@ static void test_copy(void **state)
     assert_int_equal(output2.size, 0);
 }
 
-static void test_find(void **state)
+static void test_iterator_find(void **state)
 {
     // Piece of memory where the data will be searched
     int origin[3];
@@ -75,7 +75,7 @@ static void test_find(void **state)
     assert_int_equal(output2.size, sizeof(int));
 }
 
-static void test_equal(void **state)
+static void test_iterator_equal(void **state)
 {
     Iterator iterator1 = iterator_create((void *)0x1, 32);
     Iterator iterator2 = iterator_create((void *)0x1, 32);
@@ -86,7 +86,7 @@ static void test_equal(void **state)
     assert_false(iterator_equal(iterator1, iterator2));
 }
 
-static void test_get(void **state)
+static void test_iterator_get(void **state)
 {
     Iterator iterator = iterator_create((void *)0x1, 32);
     assert_ptr_equal(iterator_get(iterator), 0x1);
@@ -94,14 +94,14 @@ static void test_get(void **state)
     assert_ptr_equal(iterator_get(iterator), NULL);
 }
 
-static void test_distance(void **state)
+static void test_iterator_distance(void **state)
 {
     Iterator iterator1 = iterator_create((void *)0x1, sizeof(int));
     Iterator iterator2 = iterator_create((void *)0x1 + 4 * sizeof(int), sizeof(int));
     assert_int_equal(iterator_distance(iterator1, iterator2), 4);
 }
 
-static void test_increase(void **state)
+static void test_iterator_increase(void **state)
 {
     Iterator iterator = iterator_create((void *)0x1, sizeof(int));
     Iterator result = iterator_increase(iterator, 1);
@@ -109,25 +109,10 @@ static void test_increase(void **state)
     assert_int_equal(result.size, sizeof(int));
 }
 
-static void test_decrease(void **state)
+static void test_iterator_decrease(void **state)
 {
     Iterator iterator = iterator_create((void *)0x1, sizeof(int));
     Iterator result = iterator_decrease(iterator, 1);
     assert_ptr_equal(result.pointer, 0x1 - sizeof(int));
     assert_int_equal(result.size, sizeof(int));
-}
-
-int main(void)
-{
-    const struct CMUnitTest tests[] = {
-        cmocka_unit_test(test_create),
-        cmocka_unit_test(test_copy),
-        cmocka_unit_test(test_find),
-        cmocka_unit_test(test_equal),
-        cmocka_unit_test(test_get),
-        cmocka_unit_test(test_distance),
-        cmocka_unit_test(test_increase),
-        cmocka_unit_test(test_decrease),
-    };
-    return cmocka_run_group_tests(tests, NULL, NULL);
 }
