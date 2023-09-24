@@ -66,11 +66,15 @@ String *string_createFromBuffer(const char *origin, const size_t size)
         return NULL;
     }
 
-    String *destination = string_create();
-    if (destination == NULL)
+    // Create a non initialised string
+    String *result = malloc(sizeof(String));
+    if (result == NULL)
     {
         return NULL;
     }
+    result->buffer = NULL;
+    result->length = 0;
+    result->capacity = 0;
 
     // Alloc memory for the buffer
     void *tmp = malloc(size + 1);
@@ -78,12 +82,12 @@ String *string_createFromBuffer(const char *origin, const size_t size)
     {
         return NULL;
     }
-    destination->buffer = tmp;
-    memcpy(destination->buffer, origin, size);
-    destination->buffer[size] = '\0';
-    destination->length = size;
-    destination->capacity = size + 1;
-    return destination;
+    result->buffer = tmp;
+    memcpy(result->buffer, origin, size);
+    result->buffer[size] = '\0';
+    result->length = size;
+    result->capacity = size + 1;
+    return result;
 }
 
 size_t string_length(const String *string)
