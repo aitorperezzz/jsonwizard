@@ -182,7 +182,11 @@ ResultCode vector_erase(Vector *vector, Iterator first, Iterator last)
     }
 
     Iterator end = vector_end(vector);
-    const size_t distance = iterator_distance(last, end);
+    size_t distance;
+    if (iterator_distance(last, end, &distance) != CODE_OK)
+    {
+        return CODE_LOGIC_ERROR;
+    }
     Iterator writeIterator = first;
     Iterator readIterator = last;
     for (size_t i = 0; i < distance; i++)
@@ -196,7 +200,11 @@ ResultCode vector_erase(Vector *vector, Iterator first, Iterator last)
         readIterator = iterator_increase(readIterator, 1);
         writeIterator = iterator_increase(writeIterator, 1);
     }
-    vector->size -= iterator_distance(first, last);
+    if (iterator_distance(first, last, &distance) != CODE_OK)
+    {
+        return CODE_LOGIC_ERROR;
+    }
+    vector->size -= distance;
 
     return CODE_OK;
 }

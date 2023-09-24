@@ -25,6 +25,7 @@ int main(void)
         cmocka_unit_test(test_string_type_free),
         // iterator
         cmocka_unit_test(test_iterator_create),
+        cmocka_unit_test(test_iterator_invalid),
         cmocka_unit_test(test_iterator_copy),
         cmocka_unit_test(test_iterator_find),
         cmocka_unit_test(test_iterator_equal),

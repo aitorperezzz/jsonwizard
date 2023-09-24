@@ -15,6 +15,13 @@ static void test_iterator_create(void **state)
     assert_int_equal(iterator.size, 16);
 }
 
+static void test_iterator_invalid(void **state)
+{
+    Iterator iterator = iterator_invalid();
+    assert_ptr_equal(iterator.pointer, NULL);
+    assert_int_equal(iterator.size, 0);
+}
+
 static void test_iterator_copy(void **state)
 {
     // Create an array with data to copy from
@@ -38,10 +45,17 @@ static void test_iterator_copy(void **state)
     assert_memory_equal(origin, destination, 3 * sizeof(int));
 
     // Try to copy to a result in the middle of the first and last iterators
-    Iterator result2 = iterator_create(origin + 1, sizeof(int));
-    Iterator output2 = iterator_copy(first, last, result2);
-    assert_ptr_equal(output2.pointer, NULL);
-    assert_int_equal(output2.size, 0);
+    result = iterator_create(origin + 1, sizeof(int));
+    output = iterator_copy(first, last, result);
+    assert_ptr_equal(output.pointer, NULL);
+    assert_int_equal(output.size, 0);
+
+    // Provide inconsistent iterators
+    last = iterator_create(origin + 3, sizeof(char *));
+    result = iterator_create(destination, sizeof(int));
+    output = iterator_copy(first, last, result);
+    assert_ptr_equal(output.pointer, NULL);
+    assert_int_equal(output.size, 0);
 }
 
 static void test_iterator_find(void **state)
@@ -62,17 +76,27 @@ static void test_iterator_find(void **state)
     assert_int_equal(output.size, sizeof(int));
 
     // Search in a memory area where the value is not found
-    int origin2[3];
     for (int i = 0; i < 3; i++)
     {
-        origin2[i] = i + 6;
+        origin[i] = i + 6;
     }
     // Find and check the result
-    Iterator first2 = iterator_create(origin2, sizeof(int));
-    Iterator last2 = iterator_increase(first2, 3);
-    Iterator output2 = iterator_find(first2, last2, &toFind);
-    assert_ptr_equal(output2.pointer, origin2 + 3);
-    assert_int_equal(output2.size, sizeof(int));
+    first = iterator_create(origin, sizeof(int));
+    last = iterator_increase(first, 3);
+    output = iterator_find(first, last, &toFind);
+    assert_ptr_equal(output.pointer, origin + 3);
+    assert_int_equal(output.size, sizeof(int));
+
+    // Provide NULL data
+    output = iterator_find(first, last, NULL);
+    assert_ptr_equal(output.pointer, NULL);
+    assert_int_equal(output.size, 0);
+
+    // Provide inconsistent iterators
+    last = iterator_create(origin + 3, sizeof(char *));
+    output = iterator_find(first, last, &toFind);
+    assert_ptr_equal(output.pointer, NULL);
+    assert_int_equal(output.size, 0);
 }
 
 static void test_iterator_equal(void **state)
@@ -88,17 +112,29 @@ static void test_iterator_equal(void **state)
 
 static void test_iterator_get(void **state)
 {
-    Iterator iterator = iterator_create((void *)0x1, 32);
-    assert_ptr_equal(iterator_get(iterator), 0x1);
+    Iterator iterator = iterator_create((void *)0x15689, 32);
+    assert_ptr_equal(iterator_get(iterator), 0x15689);
     iterator = iterator_create(NULL, 32);
     assert_ptr_equal(iterator_get(iterator), NULL);
 }
 
 static void test_iterator_distance(void **state)
 {
-    Iterator iterator1 = iterator_create((void *)0x1, sizeof(int));
-    Iterator iterator2 = iterator_create((void *)0x1 + 4 * sizeof(int), sizeof(int));
-    assert_int_equal(iterator_distance(iterator1, iterator2), 4);
+    size_t distance;
+
+    // Valid iterators
+    Iterator iterator1 = iterator_create((void *)0x15689, sizeof(int));
+    Iterator iterator2 = iterator_create((void *)0x15689 + 4 * sizeof(int), sizeof(int));
+    assert_int_equal(iterator_distance(iterator1, iterator2, &distance), CODE_OK);
+    assert_int_equal(distance, 4);
+
+    // Invalid iterators
+    iterator2 = iterator_create((void *)0x15689, sizeof(char *));
+    assert_int_equal(iterator_distance(iterator1, iterator2, &distance), CODE_LOGIC_ERROR);
+
+    // Invalid pointer for output data
+    iterator2 = iterator_create((void *)0x15689 + 4 * sizeof(int), sizeof(int));
+    assert_int_equal(iterator_distance(iterator1, iterator2, NULL), CODE_MEMORY_ERROR);
 }
 
 static void test_iterator_increase(void **state)
@@ -107,6 +143,9 @@ static void test_iterator_increase(void **state)
     Iterator result = iterator_increase(iterator, 1);
     assert_ptr_equal(result.pointer, 0x1 + sizeof(int));
     assert_int_equal(result.size, sizeof(int));
+    result = iterator_increase(iterator, 0);
+    assert_ptr_equal(result.pointer, 0x1);
+    assert_int_equal(result.size, sizeof(int));
 }
 
 static void test_iterator_decrease(void **state)
@@ -114,5 +153,8 @@ static void test_iterator_decrease(void **state)
     Iterator iterator = iterator_create((void *)0x1, sizeof(int));
     Iterator result = iterator_decrease(iterator, 1);
     assert_ptr_equal(result.pointer, 0x1 - sizeof(int));
+    assert_int_equal(result.size, sizeof(int));
+    result = iterator_decrease(iterator, 0);
+    assert_ptr_equal(result.pointer, 0x1);
     assert_int_equal(result.size, sizeof(int));
 }

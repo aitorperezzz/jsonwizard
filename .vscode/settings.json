@@ -15,6 +15,7 @@
         "vector.h": "c",
         "istream": "c",
         "*.tcc": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "setjmp.h": "c"
     }
 }
