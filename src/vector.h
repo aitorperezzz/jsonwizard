@@ -6,77 +6,86 @@
 #include "utils.h"
 #include "iterator.h"
 
-/// @brief Definition of the contents of a vector
+/// @brief Vector
 typedef struct Vector_st
 {
-    void *data;
-    size_t size;
-    size_t capacity;
-    size_t elementSize;
-    ResultCode (*freeCallback)(void *);
+    void *data;                         // Internal back-to-back buffer of data
+    size_t size;                        // Number of elements currently in the vector
+    size_t capacity;                    // Total number of elements that can fit in the reserved internal buffer
+    size_t elementSize;                 // Number of bytes of each item in the vector
+    ResultCode (*freeCallback)(void *); // Function to call to free the memory used by one element of the vector
 } Vector;
 
-/// @brief Creates a new vector
-/// @param elementSize Size of each of the elements it will store
-/// @param freeCallback Callback function to free the memory used at specific location in the vector
-/// @return The newly created vector, or NULL if something went wrong
+/// @brief Create a new vector
+/// @param elementSize Number of bytes of each element that will be stored in the vector
+/// @param freeCallback Function to call to free the memory used by one element of the vector
+/// @retval Pointer to the new vector
+/// @retval NULL if a problem was encountered
 Vector *vector_create(const size_t elementSize, ResultCode (*freeCallback)(void *));
 
-/// @brief Returns the number of elements currently in the vector
+/// @brief Return the number of elements of the vector
 /// @param vector The vector
-/// @return The number of elements currently in the vector
+/// @return Number of elements of the vector
 size_t vector_size(const Vector *vector);
 
-/// @brief Adds an element to the end of a vector
+/// @brief Push an element to the end of the vector
 /// @param vector The vector
 /// @param data Pointer to the data to add
 /// @return Result code
 ResultCode vector_push(Vector *vector, const void *data);
 
-/// @brief Clears a vector: all the elements are removed and the size goes to 0. However, the capacity
-/// does not change, so the memory reserved stays there
-/// @param vector The vector to clear
+/// @brief Remove all the elements in the vector
+/// @param vector The vector that will be cleared
 /// @return Result code
 ResultCode vector_clear(Vector *vector);
 
-/// @brief Frees a vector structure. It frees the memory used by the internal elements of the vector, then
-/// frees the memory used by the structure itself
-/// @param vector The vector to free
+/// @brief Free all the memory used by the vector, including each of the internal elements
+/// @param vector The vector that will be freed
 /// @return Result code
 ResultCode vector_free(Vector *vector);
 
-/// @brief Returns a pointer to the data inside the vector at the specified index
+/// @brief Return a pointer to the data inside the vector at the specified index
 /// @param vector The vector
-/// @param index Index of the element to return
-/// @return Pointer to the data at the provided index
+/// @param index Index of the element being accessed
+/// @retval Pointer to the data at the provided index
+/// @retval NULL if the vector or the index are not valid
 void *vector_at(const Vector *vector, const size_t index);
 
-/// @brief Changes the data inside the vector at the specified index
+/// @brief Change the data inside the vector at the specified index
 /// @param vector Vector to modify
 /// @param index Index where the data will be stored
 /// @param data Data to store
 /// @return Result code
 ResultCode vector_set(Vector *vector, const size_t index, const void *data);
 
-/// @brief Returns an iterator pointing to the beginning of the vector
+/// @brief Return an iterator pointing at the beginning of the vector
 /// @param vector Vector
-/// @return Iterator at the beginning of the vector
+/// @return Iterator pointing at the beginning of the vector
 Iterator vector_begin(const Vector *vector);
 
-/// @brief Returns an iterator pointing to the end of the vector
+/// @brief Return an iterator pointing at the end of the vector
 /// @param vector Vector
-/// @return Iterator at the end of the vector. Caution, most probably, this iterator points to inaccessible memory
+/// @return Iterator pointing at the end (past) of the vector
 Iterator vector_end(const Vector *vector);
 
-/// @brief Erases a range of elements from the vector
+/// @brief Erase a range of elements from the vector
 /// @param vector The vector where the elements will be erased
 /// @param first Iterator to the first element to remove
 /// @param last Iterator to the last (past) element to remove
 /// @return Result code
 ResultCode vector_erase(Vector *vector, Iterator first, Iterator last);
 
+/// @brief Insert a whole range of elements into the vector
+/// @param vector Vector that will be modified
+/// @param first Iterator pointing to the first element of the range that will be inserted
+/// @param last Iterator pointing to the last (past) element of the range that will be inserted
+/// @param destination Iterator pointing to the first element of the destination range (inside the vector)
+/// @return Result code
 ResultCode vector_insert(Vector *vector, Iterator first, Iterator last, Iterator destination);
 
+/// @brief Return true if the vector is empty
+/// @param vector The vector
+/// @return true if the vector is empty, false if not
 bool vector_empty(const Vector *vector);
 
 #endif

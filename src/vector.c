@@ -1,15 +1,15 @@
 #include <string.h>
-#include <stdio.h>
 
 #include "vector.h"
 
 Vector *vector_create(const size_t elementSize, ResultCode (*freeCallback)(void *))
 {
-    if (freeCallback == NULL)
+    if (freeCallback == NULL || elementSize == 0)
     {
-        printf("Please provide a non-NULL callback function to free elements of vector\n");
         return NULL;
     }
+
+    // Allocate memory and initialise with default values
     Vector *result = malloc(sizeof(Vector));
     if (result == NULL)
     {
@@ -27,7 +27,6 @@ size_t vector_size(const Vector *vector)
 {
     if (vector == NULL)
     {
-        printf("Attempt to get size of NULL vector\n");
         return 0;
     }
     return vector->size;
@@ -35,15 +34,8 @@ size_t vector_size(const Vector *vector)
 
 ResultCode vector_push(Vector *vector, const void *data)
 {
-    // Initial checks
-    if (vector == NULL)
+    if (vector == NULL || data == NULL)
     {
-        printf("Cannot push to NULL vector\n");
-        return CODE_MEMORY_ERROR;
-    }
-    if (data == NULL)
-    {
-        printf("Cannot push NULL data to vector\n");
         return CODE_MEMORY_ERROR;
     }
 
@@ -81,9 +73,9 @@ ResultCode vector_clear(Vector *vector)
 {
     if (vector == NULL)
     {
-        printf("Cannot clear a NULL vector\n");
         return CODE_MEMORY_ERROR;
     }
+
     // Free the memory in use at each index in the vector
     for (size_t i = 0, n = vector->size; i < n; i++)
     {
@@ -93,10 +85,9 @@ ResultCode vector_clear(Vector *vector)
         }
     }
 
-    // All the internal elements have been freed, so clear the vector
+    // All the internal elements have been freed, so fill the vector with zeros but keep the memory reserved
     memset(vector->data, '\0', vector->size * vector->elementSize);
     vector->size = 0;
-
     return CODE_OK;
 }
 
@@ -104,14 +95,20 @@ ResultCode vector_free(Vector *vector)
 {
     if (vector == NULL)
     {
-        printf("Cannot free a NULL vector\n");
         return CODE_MEMORY_ERROR;
     }
+
+    // First free the memory used by each of the elements
     if (vector_clear(vector) != CODE_OK)
     {
         return CODE_MEMORY_ERROR;
     }
+
+    // Free the internal buffer
     free(vector->data);
+
+    // Reset variables
+    vector->data = NULL;
     vector->size = 0;
     vector->capacity = 0;
     vector->elementSize = 0;
@@ -120,14 +117,8 @@ ResultCode vector_free(Vector *vector)
 
 void *vector_at(const Vector *vector, const size_t index)
 {
-    if (vector == NULL)
+    if (vector == NULL || index >= vector->size)
     {
-        printf("Cannot get elements of NULL vector\n");
-        return NULL;
-    }
-    if (index >= vector->size)
-    {
-        printf("Cannot access element at index %lu\n", index);
         return NULL;
     }
     return vector->data + index * vector->elementSize;
@@ -135,22 +126,15 @@ void *vector_at(const Vector *vector, const size_t index)
 
 ResultCode vector_set(Vector *vector, const size_t index, const void *data)
 {
-    if (vector == NULL)
+    if (vector == NULL || data == NULL)
     {
-        printf("Cannot set elements of NULL vector\n");
-        return CODE_MEMORY_ERROR;
-    }
-    if (data == NULL)
-    {
-        printf("Cannot set NULL data into vector\n");
         return CODE_MEMORY_ERROR;
     }
     if (index >= vector->size)
     {
-        printf("Cannot access element at index %lu\n", index);
         return CODE_LOGIC_ERROR;
     }
-    memcpy(vector->data + index * vector->elementSize, data, vector->elementSize);
+    memcpy(vector_at(vector, index), data, vector->elementSize);
     return CODE_OK;
 }
 
@@ -158,7 +142,6 @@ Iterator vector_begin(const Vector *vector)
 {
     if (vector == NULL || vector->data == NULL)
     {
-        printf("Cannot create begin iterator\n");
         return iterator_invalid();
     }
     return iterator_create(vector->data, vector->elementSize);
@@ -168,7 +151,6 @@ Iterator vector_end(const Vector *vector)
 {
     if (vector == NULL || vector->data == NULL)
     {
-        printf("Cannot create end iterator\n");
         return iterator_invalid();
     }
     return iterator_create(vector->data + vector->size * vector->elementSize, vector->elementSize);
@@ -176,17 +158,24 @@ Iterator vector_end(const Vector *vector)
 
 ResultCode vector_erase(Vector *vector, Iterator first, Iterator last)
 {
+    if (vector == NULL)
+    {
+        return CODE_MEMORY_ERROR;
+    }
     if (first.pointer >= last.pointer)
     {
         return CODE_OK;
     }
 
+    // Compute the distance between last and end, as these will be the elements to move
     Iterator end = vector_end(vector);
     size_t distance;
     if (iterator_distance(last, end, &distance) != CODE_OK)
     {
         return CODE_LOGIC_ERROR;
     }
+
+    // Write on the first iterator the contents of the last iterator, advance, and so on
     Iterator writeIterator = first;
     Iterator readIterator = last;
     for (size_t i = 0; i < distance; i++)
@@ -200,18 +189,69 @@ ResultCode vector_erase(Vector *vector, Iterator first, Iterator last)
         readIterator = iterator_increase(readIterator, 1);
         writeIterator = iterator_increase(writeIterator, 1);
     }
+
+    // Reduce the size of the vector accordingly
     if (iterator_distance(first, last, &distance) != CODE_OK)
     {
         return CODE_LOGIC_ERROR;
     }
     vector->size -= distance;
-
     return CODE_OK;
 }
 
 ResultCode vector_insert(Vector *vector, Iterator first, Iterator last, Iterator destination)
 {
-    return CODE_NOT_SUPPORTED;
+    if (vector == NULL)
+    {
+        return CODE_MEMORY_ERROR;
+    }
+
+    // Compute the number of new elements
+    size_t numElementsAdded = 0;
+    if (iterator_distance(first, last, &numElementsAdded) != CODE_OK)
+    {
+        return CODE_MEMORY_ERROR;
+    }
+    // Compute the number of elements that will be displaced
+    size_t numElementsDisplaced = 0;
+    if (iterator_distance(destination, vector_end(vector), &numElementsDisplaced) != CODE_OK)
+    {
+        return CODE_MEMORY_ERROR;
+    }
+
+    // Reallocate the vector to accomodate the new elements
+    void *tmp = realloc(vector->data, (vector->capacity + numElementsAdded) * vector->elementSize);
+    if (tmp == NULL)
+    {
+        return CODE_MEMORY_ERROR;
+    }
+    vector->data = tmp;
+    vector->size += numElementsAdded;
+    vector->capacity += numElementsAdded;
+
+    // Move all the elements between destination and end, to the end of the vector
+    // The last element is moved first to prevent overwrites. Then the iterator progresses down
+    Iterator readIterator, writeIterator;
+    readIterator = iterator_increase(destination, numElementsDisplaced - 1);
+    writeIterator = iterator_increase(readIterator, numElementsAdded);
+    for (size_t i = 0; i < numElementsDisplaced; i++)
+    {
+        memcpy(iterator_get(writeIterator), iterator_get(readIterator), vector->elementSize);
+        readIterator = iterator_decrease(readIterator, 1);
+        writeIterator = iterator_decrease(writeIterator, 1);
+    }
+
+    // Write the new elements
+    readIterator = first;
+    writeIterator = destination;
+    for (size_t i = 0; i < numElementsAdded; i++)
+    {
+        memcpy(iterator_get(writeIterator), iterator_get(readIterator), vector->elementSize);
+        readIterator = iterator_increase(readIterator, 1);
+        writeIterator = iterator_increase(writeIterator, 1);
+    }
+
+    return CODE_OK;
 }
 
 bool vector_empty(const Vector *vector)

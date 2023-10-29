@@ -1,5 +1,4 @@
 #include <string.h>
-#include <stdio.h>
 
 #include "iterator.h"
 
@@ -70,7 +69,6 @@ Iterator iterator_copy(Iterator first, Iterator last, Iterator result)
     }
     if (distance1 < distance2)
     {
-        printf("Cannot copy to a range between first and last\n");
         return iterator_invalid();
     }
 

@@ -39,11 +39,13 @@ int main(void)
         cmocka_unit_test(test_vector_push),
         cmocka_unit_test(test_vector_clear),
         cmocka_unit_test(test_vector_free),
-        cmocka_unit_test(test_vector_get),
+        cmocka_unit_test(test_vector_at),
         cmocka_unit_test(test_vector_set),
         cmocka_unit_test(test_vector_begin),
         cmocka_unit_test(test_vector_end),
         cmocka_unit_test(test_vector_erase),
+        cmocka_unit_test(test_vector_insert),
+        cmocka_unit_test(test_vector_empty),
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

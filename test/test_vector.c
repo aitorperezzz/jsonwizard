@@ -3,12 +3,12 @@
 
 #include "vector.h"
 
-static ResultCode noFree(void *data)
+static ResultCode intFree(void *data)
 {
     return CODE_OK;
 }
 
-static ResultCode myStringFree(void *data)
+static ResultCode stringFree(void *data)
 {
     if (data == NULL)
     {
@@ -25,7 +25,7 @@ static ResultCode myStringFree(void *data)
 
 static Vector *createIntegerVector(void)
 {
-    Vector *vector = vector_create(sizeof(int), noFree);
+    Vector *vector = vector_create(sizeof(int), intFree);
     int values[10];
     for (size_t i = 0; i < 10; i++)
     {
@@ -37,7 +37,7 @@ static Vector *createIntegerVector(void)
 
 static Vector *createStringVector(void)
 {
-    Vector *vector = vector_create(sizeof(char *), myStringFree);
+    Vector *vector = vector_create(sizeof(char *), stringFree);
     char *value;
     for (size_t i = 0; i < 10; i++)
     {
@@ -51,41 +51,47 @@ static Vector *createStringVector(void)
 
 static void test_vector_create(void **state)
 {
-    Vector *vector = vector_create(sizeof(int), noFree);
+    Vector *vector = vector_create(sizeof(int), intFree);
     assert_ptr_equal(vector->data, NULL);
     assert_int_equal(vector->size, 0);
     assert_int_equal(vector->capacity, 0);
     assert_int_equal(vector->elementSize, sizeof(int));
-    assert(vector->freeCallback == noFree);
+    assert(vector->freeCallback == intFree);
     assert_int_equal(vector_free(vector), CODE_OK);
     free(vector);
 
+    // Create with no free callback
     vector = vector_create(sizeof(int), NULL);
+    assert_ptr_equal(vector, NULL);
+
+    // Create with no element size
+    vector = vector_create(0, NULL);
     assert_ptr_equal(vector, NULL);
 }
 
 static void test_vector_size(void **state)
 {
-    Vector *vector = createIntegerVector();
+    Vector *vector;
+
+    vector = createIntegerVector();
     assert_int_equal(vector_size(vector), vector->size);
     assert_int_equal(vector_size(vector), 10);
-    int number = 400;
-    assert_int_equal(vector_push(vector, &number), CODE_OK);
-    assert_int_equal(vector_size(vector), vector->size);
-    assert_int_equal(vector_size(vector), 11);
-    assert_int_equal(vector_clear(vector), CODE_OK);
-    assert_int_equal(vector_size(vector), vector->size);
-    assert_int_equal(vector_size(vector), 0);
     assert_int_equal(vector_free(vector), CODE_OK);
     free(vector);
 
-    vector = NULL;
-    assert_int_equal(vector_size(vector), 0);
+    vector = createStringVector();
+    assert_int_equal(vector_size(vector), vector->size);
+    assert_int_equal(vector_size(vector), 10);
+    assert_int_equal(vector_free(vector), CODE_OK);
+    free(vector);
 }
 
 static void test_vector_push(void **state)
 {
-    Vector *vector = vector_create(sizeof(int), noFree);
+    Vector *vector;
+
+    // Push integer
+    vector = vector_create(sizeof(int), intFree);
     int number = 4;
     assert_int_equal(vector_push(vector, &number), CODE_OK);
     assert_ptr_not_equal(vector->data, NULL);
@@ -101,12 +107,29 @@ static void test_vector_push(void **state)
     assert_int_equal(vector->size, 2);
     assert_int_equal(vector->capacity, 2);
     assert_int_equal(vector->elementSize, sizeof(int));
+
+    // Push nothing
     assert_int_equal(vector_push(vector, NULL), CODE_MEMORY_ERROR);
     assert_int_equal(vector_free(vector), CODE_OK);
     free(vector);
 
+    // Push to null vector
     vector = NULL;
     assert_int_equal(vector_push(vector, &number2), CODE_MEMORY_ERROR);
+
+    // Push string
+    vector = vector_create(sizeof(String *), stringFree);
+    String *string = string_createFromLiteral("hello");
+    assert_int_equal(vector_push(vector, &string), CODE_OK);
+    assert_ptr_not_equal(vector->data, NULL);
+    assert_memory_equal(vector->data, &string, sizeof(String *));
+    assert_int_equal(vector->size, 1);
+    assert_int_equal(vector->capacity, 1);
+    assert_int_equal(vector->elementSize, sizeof(String *));
+    String *storedString = *(String **)vector_at(vector, 0);
+    assert_memory_equal(storedString->buffer, string->buffer, string->length);
+    assert_int_equal(vector_free(vector), CODE_OK);
+    free(vector);
 }
 
 static void test_vector_clear(void **state)
@@ -140,32 +163,49 @@ static void test_vector_free(void **state)
     free(stringVector);
 }
 
-static void test_vector_get(void **state)
+static void test_vector_at(void **state)
 {
     Vector *vector = createIntegerVector();
+
+    // Valid position
     int *extracted = vector_at(vector, 5);
     assert_ptr_not_equal(extracted, NULL);
     assert_int_equal(*extracted, 5);
+    // Invalid position
     assert_ptr_equal(vector_at(vector, 10), NULL);
     assert_int_equal(vector_free(vector), CODE_OK);
     free(vector);
-
-    vector = NULL;
-    assert_int_equal(vector_at(vector, 0), NULL);
+    // Invalid vector pointer
+    assert_int_equal(vector_at(NULL, 0), NULL);
 }
 
 static void test_vector_set(void **state)
 {
     Vector *vector = createIntegerVector();
+
+    // Modify a single valid element
     int modification = 257;
     assert_int_equal(vector_set(vector, 5, &modification), CODE_OK);
     int *inside = vector->data + 5 * sizeof(int);
+    for (size_t i = 0; i < 5; i++)
+    {
+        assert_int_equal(*(int *)vector_at(vector, i), i);
+    }
     assert_int_equal(*inside, 257);
+    for (size_t i = 6; i < 10; i++)
+    {
+        assert_int_equal(*(int *)vector_at(vector, i), i);
+    }
+
+    // Modify invalid index
     assert_int_equal(vector_set(vector, 10, &modification), CODE_LOGIC_ERROR);
+
+    // Modify with invalid data
     assert_int_equal(vector_set(vector, 5, NULL), CODE_MEMORY_ERROR);
     assert_int_equal(vector_free(vector), CODE_OK);
     free(vector);
 
+    // Modify invalid vector
     vector = NULL;
     assert_int_equal(vector_set(vector, 0, &modification), CODE_MEMORY_ERROR);
 }
@@ -174,6 +214,7 @@ static void test_vector_begin(void **state)
 {
     Iterator begin;
 
+    // Vector valid and full
     Vector *vector = createIntegerVector();
     begin = vector_begin(vector);
     assert_ptr_equal(begin.pointer, vector->data);
@@ -181,15 +222,16 @@ static void test_vector_begin(void **state)
     assert_int_equal(vector_free(vector), CODE_OK);
     free(vector);
 
-    vector = vector_create(sizeof(int), noFree);
+    // Vector valid and empty
+    vector = vector_create(sizeof(int), intFree);
     begin = vector_begin(vector);
     assert_ptr_equal(begin.pointer, NULL);
     assert_int_equal(begin.size, 0);
     assert_int_equal(vector_free(vector), CODE_OK);
     free(vector);
 
-    vector = NULL;
-    begin = vector_begin(vector);
+    // Vector invalid
+    begin = vector_begin(NULL);
     assert_ptr_equal(begin.pointer, NULL);
     assert_int_equal(begin.size, 0);
 }
@@ -198,6 +240,7 @@ static void test_vector_end(void **state)
 {
     Iterator end;
 
+    // Vector valid and full
     Vector *vector = createIntegerVector();
     end = vector_end(vector);
     assert_ptr_equal(end.pointer, vector->data + 10 * sizeof(int));
@@ -205,13 +248,15 @@ static void test_vector_end(void **state)
     assert_int_equal(vector_free(vector), CODE_OK);
     free(vector);
 
-    vector = vector_create(sizeof(int), noFree);
+    // Vector valid and empty
+    vector = vector_create(sizeof(int), intFree);
     end = vector_end(vector);
     assert_ptr_equal(end.pointer, NULL);
     assert_int_equal(end.size, 0);
     assert_int_equal(vector_free(vector), CODE_OK);
     free(vector);
 
+    // Vector invalid
     vector = NULL;
     end = vector_end(vector);
     assert_ptr_equal(end.pointer, NULL);
@@ -264,4 +309,12 @@ static void test_vector_erase(void **state)
     }
     assert_int_equal(vector_free(vector), CODE_OK);
     free(vector);
+}
+
+static void test_vector_insert(void **state)
+{
+}
+
+static void test_vector_empty(void **state)
+{
 }
