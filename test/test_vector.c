@@ -2,22 +2,44 @@
 #include <assert.h>
 
 #include "vector.h"
+#include "string_type.h"
 
 static ResultCode intFree(void *data)
 {
     return CODE_OK;
 }
 
+// Function that frees a C string, so the data pointed at is a char *
+static ResultCode stringCFree(void *data)
+{
+    if (data == NULL)
+    {
+        return CODE_MEMORY_ERROR;
+    }
+    char **string = (char **)data;
+    if (*string != NULL)
+    {
+        free(*string);
+    }
+    return CODE_OK;
+}
+
+// Function that frees a String, so the data pointed at is a String *
 static ResultCode stringFree(void *data)
 {
     if (data == NULL)
     {
         return CODE_MEMORY_ERROR;
     }
-    // The data pointed at is a char *
-    char **string = (char **)data;
+    String **string = (String **)data;
     if (*string != NULL)
     {
+        if ((*string)->buffer != NULL)
+        {
+            free((*string)->buffer);
+        }
+        (*string)->length = 0;
+        (*string)->capacity = 0;
         free(*string);
     }
     return CODE_OK;
@@ -37,7 +59,7 @@ static Vector *createIntegerVector(void)
 
 static Vector *createStringVector(void)
 {
-    Vector *vector = vector_create(sizeof(char *), stringFree);
+    Vector *vector = vector_create(sizeof(char *), stringCFree);
     char *value;
     for (size_t i = 0; i < 10; i++)
     {
