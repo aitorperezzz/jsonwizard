@@ -2,14 +2,14 @@
 CC := clang
 
 # Compiler flags
-CFLAGS := -g -Wall -Werror -std=c11 -fsanitize=address
-TEST_CFLAGS := $(CFLAGS) -I./src
+CFLAGS := -g -Wall -Werror -std=c11 -fsanitize=address -I./src
+TEST_CFLAGS := $(CFLAGS)
 TEST_LDFLAGS := -lcmocka -fsanitize=address
 
 # List sources, objects and dependencies
-SOURCES := $(wildcard src/*.c)
-OBJECTS := $(patsubst src/%.c,src/%.o,$(SOURCES))
-DEPENDS := $(patsubst src/%.c,src/%.d,$(SOURCES))
+SOURCES := $(wildcard src/*.c) $(wildcard src/**/*.c)
+OBJECTS := $(patsubst %.c,%.o,$(SOURCES))
+DEPENDS := $(patsubst %.c,%.d,$(SOURCES))
 TARGET := jsonwizard
 
 # Lists for tests

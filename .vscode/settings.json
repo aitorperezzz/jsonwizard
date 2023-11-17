@@ -26,6 +26,7 @@
         "initializer_list": "c",
         "stdlib.h": "c",
         "parser_sm.h": "c",
-        "types_iterator.h": "c"
+        "types_iterator.h": "c",
+        "parser_sm_string.h": "c"
     }
 }

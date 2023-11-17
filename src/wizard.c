@@ -58,7 +58,7 @@ int main(int argc, char **argv)
     }
 
     // Execute command
-    ResultCode result = executeCommand(root, parsed_command);
+    ResultCode result = execute_command(root, parsed_command);
     if (result != CODE_OK)
     {
         return result;
@@ -68,7 +68,7 @@ int main(int argc, char **argv)
     return write_to_file(root, parsed_command->filename);
 }
 
-ResultCode executeCommand(Node *root, const ParsedCommand *parsed_command)
+ResultCode execute_command(Node *root, const ParsedCommand *parsed_command)
 {
     // Decide depending on the type of command
     switch (parsed_command->command)
