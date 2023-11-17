@@ -1,12 +1,11 @@
-#include "string_type.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "utils.h"
+#include "types_string.h"
 
-String *string_create(void)
+String *types_string_create(void)
 {
     // Reserve memory for the structure itself
     String *result = malloc(sizeof(String));
@@ -27,7 +26,7 @@ String *string_create(void)
     return result;
 }
 
-String *string_createFromLiteral(const char *literal)
+String *types_string_create_from_literal(const char *literal)
 {
     if (literal == NULL)
     {
@@ -45,21 +44,21 @@ String *string_createFromLiteral(const char *literal)
     result->capacity = 0;
 
     // Directly reserve the necessary memory
-    const size_t originalLength = strlen(literal);
-    void *tmp = malloc(originalLength + 1);
+    const size_t original_length = strlen(literal);
+    void *tmp = malloc(original_length + 1);
     if (tmp == NULL)
     {
         return NULL;
     }
     result->buffer = tmp;
-    memcpy(result->buffer, literal, originalLength);
-    result->buffer[originalLength] = '\0';
-    result->length = originalLength;
-    result->capacity = originalLength + 1;
+    memcpy(result->buffer, literal, original_length);
+    result->buffer[original_length] = '\0';
+    result->length = original_length;
+    result->capacity = original_length + 1;
     return result;
 }
 
-String *string_createFromBuffer(const char *origin, const size_t size)
+String *types_string_create_from_buffer(const char *origin, const size_t size)
 {
     if (origin == NULL)
     {
@@ -90,7 +89,7 @@ String *string_createFromBuffer(const char *origin, const size_t size)
     return result;
 }
 
-size_t string_length(const String *string)
+size_t types_string_length(const String *string)
 {
     if (string == NULL)
     {
@@ -99,7 +98,7 @@ size_t string_length(const String *string)
     return string->length;
 }
 
-const char *string_cStr(const String *string)
+const char *types_string_c_str(const String *string)
 {
     if (string == NULL)
     {
@@ -108,26 +107,26 @@ const char *string_cStr(const String *string)
     return string->buffer;
 }
 
-char string_at(const String *string, const size_t index)
+char types_string_at(const String *string, const size_t index)
 {
     return string->buffer[index];
 }
 
-String *string_copy(const String *original)
+String *types_string_copy(const String *original)
 {
     if (original == NULL)
     {
         return NULL;
     }
-    return string_createFromBuffer(original->buffer, original->length);
+    return types_string_create_from_buffer(original->buffer, original->length);
 }
 
-int string_compare(const String *string1, const String *string2)
+int types_string_compare(const String *string1, const String *string2)
 {
-    return strcmp(string_cStr(string1), string_cStr(string2));
+    return strcmp(types_string_c_str(string1), types_string_c_str(string2));
 }
 
-ResultCode string_joinInPlace(String *string1, const String *string2)
+ResultCode types_string_join_in_place(String *string1, const String *string2)
 {
     if (string1 == NULL || string2 == NULL)
     {
@@ -141,10 +140,10 @@ ResultCode string_joinInPlace(String *string1, const String *string2)
     }
 
     // Check string 1 has enough capacity
-    size_t memoryNeeded = string1->length + string2->length + 1;
-    if (string1->capacity < memoryNeeded)
+    size_t memory_needed = string1->length + string2->length + 1;
+    if (string1->capacity < memory_needed)
     {
-        void *tmp = realloc(string1->buffer, memoryNeeded);
+        void *tmp = realloc(string1->buffer, memory_needed);
         if (tmp == NULL)
         {
             return CODE_MEMORY_ERROR;
@@ -154,25 +153,25 @@ ResultCode string_joinInPlace(String *string1, const String *string2)
 
     // Copy the second string into the first one
     memcpy(string1->buffer + string1->length, string2->buffer, string2->length);
-    size_t finalLength = string1->length + string2->length;
-    string1->buffer[finalLength] = '\0';
-    string1->length = finalLength;
-    string1->capacity = finalLength + 1;
+    size_t final_length = string1->length + string2->length;
+    string1->buffer[final_length] = '\0';
+    string1->length = final_length;
+    string1->capacity = final_length + 1;
     return CODE_OK;
 }
 
-String *string_join(const String *string1, const String *string2)
+String *types_string_join(const String *string1, const String *string2)
 {
     if (string1 == NULL || string2 == NULL)
     {
         return NULL;
     }
-    String *result = string_createFromBuffer(string1->buffer, string1->length);
-    string_joinInPlace(result, string2);
+    String *result = types_string_create_from_buffer(string1->buffer, string1->length);
+    types_string_join_in_place(result, string2);
     return result;
 }
 
-ResultCode string_reserve(String *string, const size_t capacity)
+ResultCode types_string_reserve(String *string, const size_t capacity)
 {
     if (string == NULL)
     {
@@ -194,19 +193,19 @@ ResultCode string_reserve(String *string, const size_t capacity)
     return CODE_OK;
 }
 
-ResultCode string_free(void *string)
+ResultCode types_string_free(void *string)
 {
     if (string == NULL)
     {
         return CODE_OK;
     }
-    String *mystring = (String *)string;
-    if (mystring->buffer != NULL)
+    String *my_string = (String *)string;
+    if (my_string->buffer != NULL)
     {
-        free(mystring->buffer);
+        free(my_string->buffer);
     }
-    mystring->buffer = NULL;
-    mystring->length = 0;
-    mystring->capacity = 0;
+    my_string->buffer = NULL;
+    my_string->length = 0;
+    my_string->capacity = 0;
     return CODE_OK;
 }

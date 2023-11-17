@@ -1,13 +1,13 @@
 #include <string.h>
 
-#include "iterator.h"
+#include "types_iterator.h"
 
 /// @brief Check if the list of iterators is consistent, meaning the sizes pointed at
 /// are all the same
 /// @param list List of iterators to check
 /// @param number Number of iterators to check
 /// @return True if the iterators are consistent
-static bool iterator_check_consistency(Iterator *const *list, const size_t number)
+static bool types_iterator_check_consistency(Iterator *const *list, const size_t number)
 {
     if (list == NULL)
     {
@@ -29,7 +29,7 @@ static bool iterator_check_consistency(Iterator *const *list, const size_t numbe
     return true;
 }
 
-Iterator iterator_invalid(void)
+Iterator types_iterator_invalid(void)
 {
     Iterator iterator;
     iterator.pointer = NULL;
@@ -37,7 +37,7 @@ Iterator iterator_invalid(void)
     return iterator;
 }
 
-Iterator iterator_create(void *pointer, const size_t size)
+Iterator types_iterator_create(void *pointer, const size_t size)
 {
     Iterator iterator;
     iterator.pointer = pointer;
@@ -45,69 +45,69 @@ Iterator iterator_create(void *pointer, const size_t size)
     return iterator;
 }
 
-Iterator iterator_copy(Iterator first, Iterator last, Iterator result)
+Iterator types_iterator_copy(Iterator first, Iterator last, Iterator result)
 {
     // Check consistency of iterators
     Iterator *iterator_list[3];
     iterator_list[0] = &first;
     iterator_list[1] = &last;
     iterator_list[2] = &result;
-    if (!iterator_check_consistency(iterator_list, 3))
+    if (!types_iterator_check_consistency(iterator_list, 3))
     {
-        return iterator_invalid();
+        return types_iterator_invalid();
     }
 
     // Check if result points to some element between first and last, which is not allowed
     size_t distance1, distance2;
-    if (iterator_distance(first, result, &distance1) != CODE_OK)
+    if (types_iterator_distance(first, result, &distance1) != CODE_OK)
     {
-        return iterator_invalid();
+        return types_iterator_invalid();
     }
-    if (iterator_distance(first, last, &distance2) != CODE_OK)
+    if (types_iterator_distance(first, last, &distance2) != CODE_OK)
     {
-        return iterator_invalid();
+        return types_iterator_invalid();
     }
     if (distance1 < distance2)
     {
-        return iterator_invalid();
+        return types_iterator_invalid();
     }
 
     // Finally perform the copy
     size_t distance;
-    if (iterator_distance(first, last, &distance) != CODE_OK)
+    if (types_iterator_distance(first, last, &distance) != CODE_OK)
     {
-        return iterator_invalid();
+        return types_iterator_invalid();
     }
     for (size_t i = 0; i < distance; i++)
     {
         memcpy(result.pointer, first.pointer, first.size);
-        first = iterator_increase(first, 1);
-        result = iterator_increase(result, 1);
+        first = types_iterator_increase(first, 1);
+        result = types_iterator_increase(result, 1);
     }
     return result;
 }
 
-Iterator iterator_find(Iterator first, Iterator last, const void *data)
+Iterator types_iterator_find(Iterator first, Iterator last, const void *data)
 {
     // Check consistency of iterators
     Iterator *iterator_list[2];
     iterator_list[0] = &first;
     iterator_list[1] = &last;
-    if (!iterator_check_consistency(iterator_list, 2))
+    if (!types_iterator_check_consistency(iterator_list, 2))
     {
-        return iterator_invalid();
+        return types_iterator_invalid();
     }
 
     // Check invalid input parameter
     if (!data)
     {
-        return iterator_invalid();
+        return types_iterator_invalid();
     }
 
     size_t distance;
-    if (iterator_distance(first, last, &distance) != CODE_OK)
+    if (types_iterator_distance(first, last, &distance) != CODE_OK)
     {
-        return iterator_invalid();
+        return types_iterator_invalid();
     }
     for (size_t i = 0; i < distance; i++)
     {
@@ -115,28 +115,28 @@ Iterator iterator_find(Iterator first, Iterator last, const void *data)
         {
             return first;
         }
-        first = iterator_increase(first, 1);
+        first = types_iterator_increase(first, 1);
     }
     return first;
 }
 
-bool iterator_equal(Iterator iterator1, Iterator iterator2)
+bool types_iterator_equal(Iterator iterator1, Iterator iterator2)
 {
     return iterator1.pointer == iterator2.pointer && iterator1.size == iterator2.size;
 }
 
-void *iterator_get(Iterator iterator)
+void *types_iterator_get(Iterator iterator)
 {
     return iterator.pointer;
 }
 
-ResultCode iterator_distance(Iterator first, Iterator last, size_t *distance)
+ResultCode types_iterator_distance(Iterator first, Iterator last, size_t *distance)
 {
     // Check consistency of iterators
     Iterator *iterator_list[2];
     iterator_list[0] = &first;
     iterator_list[1] = &last;
-    if (!iterator_check_consistency(iterator_list, 2))
+    if (!types_iterator_check_consistency(iterator_list, 2))
     {
         return CODE_LOGIC_ERROR;
     }
@@ -151,14 +151,14 @@ ResultCode iterator_distance(Iterator first, Iterator last, size_t *distance)
     return CODE_OK;
 }
 
-Iterator iterator_increase(Iterator iterator, const size_t value)
+Iterator types_iterator_increase(Iterator iterator, const size_t value)
 {
     Iterator result = iterator;
     result.pointer += iterator.size * value;
     return result;
 }
 
-Iterator iterator_decrease(Iterator iterator, const size_t value)
+Iterator types_iterator_decrease(Iterator iterator, const size_t value)
 {
     Iterator result = iterator;
     result.pointer -= iterator.size * value;
