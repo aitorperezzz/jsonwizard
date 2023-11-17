@@ -3,7 +3,7 @@
 #include <math.h>
 
 #include "write.h"
-#include "vector.h"
+#include "types/types_vector.h"
 #include "set.h"
 
 static String *write_node(const Node *node, size_t offset, bool isLast);
@@ -19,16 +19,16 @@ ResultCode write_to_file(const Node *node, const String *filename)
     }
 
     // Concatenate .json to the name of the file.
-    String *name = string_join(filename, string_createFromLiteral(".json"));
+    String *name = types_string_join(filename, types_string_create_from_literal(".json"));
 
     // Write the string to the file
-    FILE *file = fopen(string_cStr(name), "w");
+    FILE *file = fopen(types_string_c_str(name), "w");
     if (file == NULL)
     {
         printf("ERROR: Could not open a file to write to.\n");
         return CODE_ERROR;
     }
-    fputs(string_cStr(string), file);
+    fputs(types_string_c_str(string), file);
     fclose(file);
     return CODE_OK;
 }
@@ -54,7 +54,7 @@ static String *write_node(const Node *node, size_t offset, bool isLast)
     }
 
     // Create a buffer for the line to be written.
-    String *buffer = string_create();
+    String *buffer = types_string_create();
 
     // Write the offset to the buffer.
     if (add_blanks(buffer, offset) != CODE_OK)
@@ -67,14 +67,14 @@ static String *write_node(const Node *node, size_t offset, bool isLast)
     {
     case NODE_TYPE_NULL:
     {
-        string_joinInPlace(buffer, string_createFromLiteral("null"));
+        types_string_join_in_place(buffer, types_string_create_from_literal("null"));
         break;
     }
     case NODE_TYPE_STRING:
     {
-        string_joinInPlace(buffer, string_createFromLiteral("\""));
-        string_joinInPlace(buffer, (String *)node->data);
-        string_joinInPlace(buffer, string_createFromLiteral("\""));
+        types_string_join_in_place(buffer, types_string_create_from_literal("\""));
+        types_string_join_in_place(buffer, (String *)node->data);
+        types_string_join_in_place(buffer, types_string_create_from_literal("\""));
         break;
     }
     case NODE_TYPE_NUMBER:
@@ -82,13 +82,13 @@ static String *write_node(const Node *node, size_t offset, bool isLast)
         int number = *((int *)node->data);
         char numberBuffer[(int)(ceil(log10(number)) + 1) * sizeof(char)];
         snprintf(numberBuffer, sizeof(numberBuffer), "%d", number);
-        string_joinInPlace(buffer, string_createFromLiteral(numberBuffer));
+        types_string_join_in_place(buffer, types_string_create_from_literal(numberBuffer));
         break;
     }
     case NODE_TYPE_BOOLEAN:
     {
         String *booleanString = booleanCodeToString(*((Boolean *)node->data));
-        string_joinInPlace(buffer, booleanString);
+        types_string_join_in_place(buffer, booleanString);
     }
     case NODE_TYPE_ARRAY:
     {
@@ -98,12 +98,12 @@ static String *write_node(const Node *node, size_t offset, bool isLast)
     {
         // Open the object and write the current buffer contents as this is a
         // recursive function
-        buffer = string_copy(string_createFromLiteral("{\n"));
+        buffer = types_string_copy(types_string_create_from_literal("{\n"));
 
         // Call this function recursively on its childs.
         Vector *children = (Vector *)node->data;
         // int newLast;
-        const size_t size = vector_size(children);
+        const size_t size = types_vector_size(children);
         for (size_t i = 0; i < size; i++)
         {
             // newLast = i == size - 1 ? 1 : 0;
@@ -111,16 +111,16 @@ static String *write_node(const Node *node, size_t offset, bool isLast)
         }
 
         // Write the last line that all object nodes finish with
-        string_free(buffer);
+        types_string_free(buffer);
         add_blanks(buffer, offset);
-        buffer = string_copy(string_createFromLiteral("}"));
+        buffer = types_string_copy(types_string_create_from_literal("}"));
     }
     }
 
     // Print the buffer contents
     if (!isLast)
     {
-        buffer = string_copy(string_createFromLiteral(","));
+        buffer = types_string_copy(types_string_create_from_literal(","));
     }
     return NULL;
 }
@@ -132,5 +132,5 @@ static ResultCode add_blanks(String *string, size_t number)
     char blanks[2 * number + 1];
     memset(blanks, ' ', 2 * number);
     blanks[2 * number + 1] = '\0';
-    return string_joinInPlace(string, string_createFromLiteral(blanks));
+    return types_string_join_in_place(string, types_string_create_from_literal(blanks));
 }

@@ -2,8 +2,8 @@
 #define PARSE_H
 
 #include "utils.h"
-#include "string_type.h"
-#include "vector.h"
+#include "types/types_string.h"
+#include "types/types_vector.h"
 #include "json_path.h"
 
 enum Command
@@ -25,8 +25,8 @@ struct CommandSetKeyData
 
 union CommandData
 {
-    struct CommandSetValueData setValueData;
-    struct CommandSetKeyData setKeyData;
+    struct CommandSetValueData set_value_data;
+    struct CommandSetKeyData set_key_data;
 };
 
 typedef struct ParsedCommand_st

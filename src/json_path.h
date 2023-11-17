@@ -1,8 +1,8 @@
 #ifndef JSON_PATH_H
 #define JSON_PATH_H
 
-#include "vector.h"
-#include "string_type.h"
+#include "types/types_vector.h"
+#include "types/types_string.h"
 
 enum PathStepId_e
 {

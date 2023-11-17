@@ -1,8 +1,8 @@
 #ifndef NODE_H
 #define NODE_H
 
-#include "string_type.h"
-#include "iterator.h"
+#include "types/types_string.h"
+#include "types/types_iterator.h"
 
 /// @brief Types of nodes
 typedef enum

@@ -2,8 +2,8 @@
 #include <string.h>
 
 #include "node.h"
-#include "vector.h"
-#include "map.h"
+#include "types/types_vector.h"
+#include "types/types_map.h"
 #include "write.h"
 #include "read.h"
 
@@ -70,7 +70,7 @@ Node *node_get(Node *node, const String *key)
 
     // If the node is of type object, the data is a map
     Map *map = node->data;
-    return (Node *)map_at(map, key);
+    return (Node *)types_map_at(map, key);
 }
 
 ResultCode node_append(Node *node, const String *key, const Node *child)
@@ -92,7 +92,7 @@ ResultCode node_append(Node *node, const String *key, const Node *child)
     {
         return CODE_MEMORY_ERROR;
     }
-    map_insert(map, key, child);
+    types_map_insert(map, key, child);
 
     return CODE_OK;
 }
@@ -120,14 +120,14 @@ ResultCode node_erase(Node *node)
     case NODE_TYPE_ARRAY:
     {
         Vector *vector = node->parent->data;
-        for (Iterator current = vector_begin(vector), end = vector_end(vector);
-             !iterator_equal(current, end);
-             iterator_increase(current, 1))
+        for (Iterator current = types_vector_begin(vector), end = types_vector_end(vector);
+             !types_iterator_equal(current, end);
+             types_iterator_increase(current, 1))
         {
-            if (iterator_get(current) == node)
+            if (types_iterator_get(current) == node)
             {
                 // This is the one that needs to be removed
-                return vector_erase(vector, current, iterator_increase(current, 1));
+                return types_vector_erase(vector, current, types_iterator_increase(current, 1));
             }
         }
         return CODE_LOGIC_ERROR;
@@ -135,15 +135,15 @@ ResultCode node_erase(Node *node)
     case NODE_TYPE_OBJECT:
     {
         Map *map = node->parent->data;
-        for (Iterator current = map_begin(map), end = map_end(map);
-             !iterator_equal(current, end);
-             iterator_increase(current, 1))
+        for (Iterator current = types_map_begin(map), end = types_map_end(map);
+             !types_iterator_equal(current, end);
+             types_iterator_increase(current, 1))
         {
-            Pair *pair = iterator_get(current);
+            Pair *pair = types_iterator_get(current);
             if (pair->value == node)
             {
                 // This is the one that needs to be removed
-                return map_erase(map, current, iterator_increase(current, 1));
+                return types_map_erase(map, current, types_iterator_increase(current, 1));
             }
         }
         return CODE_LOGIC_ERROR;
@@ -172,17 +172,17 @@ ResultCode node_set_key(Node *node, const String *key)
 
     // Find the key value pair inside the parent
     Map *map = node->parent->data;
-    for (Iterator current = map_begin(map), end = map_end(map);
-         !iterator_equal(current, end);
-         iterator_increase(current, 1))
+    for (Iterator current = types_map_begin(map), end = types_map_end(map);
+         !types_iterator_equal(current, end);
+         types_iterator_increase(current, 1))
     {
-        Pair *pair = iterator_get(current);
+        Pair *pair = types_iterator_get(current);
         if (pair->value == node)
         {
             // Change the key here because we know the index
-            string_free(pair->key);
+            types_string_free(pair->key);
             free(pair->key);
-            pair->key = string_copy(key);
+            pair->key = types_string_copy(key);
             return CODE_OK;
         }
     }
@@ -221,7 +221,7 @@ ResultCode node_array_push(Node *root, Node *node)
 
     // Push it to the existing list
     Vector *vector = root->data;
-    if (vector_push(vector, node) != CODE_OK)
+    if (types_vector_push(vector, node) != CODE_OK)
     {
         return CODE_LOGIC_ERROR;
     }
@@ -232,30 +232,30 @@ Iterator node_array_begin(Node *node)
 {
     if (node == NULL)
     {
-        return iterator_invalid();
+        return types_iterator_invalid();
     }
     if (node->type != NODE_TYPE_ARRAY)
     {
-        return iterator_invalid();
+        return types_iterator_invalid();
     }
 
     Vector *vector = node->data;
-    return vector_begin(vector);
+    return types_vector_begin(vector);
 }
 
 Iterator node_array_end(Node *node)
 {
     if (node == NULL)
     {
-        return iterator_invalid();
+        return types_iterator_invalid();
     }
     if (node->type != NODE_TYPE_ARRAY)
     {
-        return iterator_invalid();
+        return types_iterator_invalid();
     }
 
     Vector *vector = node->data;
-    return vector_end(vector);
+    return types_vector_end(vector);
 }
 
 ResultCode node_array_insert(Node *node, Iterator first, Iterator last, Iterator destination)
@@ -270,7 +270,7 @@ ResultCode node_array_insert(Node *node, Iterator first, Iterator last, Iterator
     }
 
     Vector *vector = node->data;
-    return vector_insert(vector, first, last, destination);
+    return types_vector_insert(vector, first, last, destination);
 }
 
 size_t node_array_size(Node *node)
@@ -284,7 +284,7 @@ size_t node_array_size(Node *node)
         return CODE_LOGIC_ERROR;
     }
 
-    return vector_size(node->data);
+    return types_vector_size(node->data);
 }
 
 Node *node_array_get(Node *node, size_t index)
@@ -299,38 +299,38 @@ Node *node_array_get(Node *node, size_t index)
     }
 
     Vector *vector = node->data;
-    return (Node *)vector_at(vector, index);
+    return (Node *)types_vector_at(vector, index);
 }
 
 ResultCode node_free(void *node)
 {
     ResultCode result = CODE_OK;
-    Node *myNode = node;
+    Node *my_node = node;
 
     // Free resources according to the type
-    switch (myNode->type)
+    switch (my_node->type)
     {
     case NODE_TYPE_NULL:
     case NODE_TYPE_NUMBER:
     case NODE_TYPE_BOOLEAN:
         break;
     case NODE_TYPE_STRING:
-        result = string_free(myNode->data);
+        result = types_string_free(my_node->data);
         break;
     case NODE_TYPE_ARRAY:
-        result = vector_free(myNode->data);
+        result = types_vector_free(my_node->data);
         break;
     case NODE_TYPE_OBJECT:
-        result = map_free(myNode->data);
+        result = types_map_free(my_node->data);
         break;
     }
 
-    if (myNode->data != NULL)
+    if (my_node->data != NULL)
     {
-        free(myNode->data);
-        myNode->data = NULL;
+        free(my_node->data);
+        my_node->data = NULL;
     }
-    myNode->type = NODE_TYPE_NULL;
+    my_node->type = NODE_TYPE_NULL;
 
     return result;
 }

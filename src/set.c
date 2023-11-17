@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "set.h"
-#include "vector.h"
+#include "types/types_vector.h"
 
 // Prototypes of static functions.
 static int isInteger(const String *string);
@@ -27,26 +27,26 @@ ResultCode jsonModify(Node *root, const String *key, const String *field, const 
     Node *node = node_get(root, key);
     if (node == NULL)
     {
-        printf("ERROR: cannot modify node. Key %s was not found.\n", string_cStr(key));
+        printf("ERROR: cannot modify node. Key %s was not found.\n", types_string_c_str(key));
         return CODE_ERROR;
     }
 
     // Decide based on the field.
-    if (string_compare(field, string_createFromLiteral("type")) == 0)
+    if (types_string_compare(field, types_string_create_from_literal("type")) == 0)
     {
         return setType(node, typeStringToCode(value));
     }
-    else if (string_compare(field, string_createFromLiteral("key")) == 0)
+    else if (types_string_compare(field, types_string_create_from_literal("key")) == 0)
     {
         return setKey(node, value);
     }
-    else if (string_compare(field, string_createFromLiteral("data")) == 0)
+    else if (types_string_compare(field, types_string_create_from_literal("data")) == 0)
     {
         return setData(node, value);
     }
     else
     {
-        printf("ERROR: cannot modify node. '%s' is not a valid field.\n", string_cStr(field));
+        printf("ERROR: cannot modify node. '%s' is not a valid field.\n", types_string_c_str(field));
         return CODE_ERROR;
     }
 }
@@ -95,7 +95,7 @@ ResultCode setKey(Node *node, const String *key)
 
     // TODO: check the key is not already in use.
 
-    // node->key = string_copy(key);
+    // node->key = types_string_copy(key);
     return CODE_OK;
 }
 
@@ -129,7 +129,7 @@ ResultCode setData(Node *node, const String *value)
         printf("ERROR: cannot modify data inside ARRAY and OBJECT nodes with setData.\n");
         return CODE_ERROR;
     case NODE_TYPE_STRING:
-        node->data = string_copy(value);
+        node->data = types_string_copy(value);
         return CODE_OK;
     case NODE_TYPE_NUMBER:
         if (!isInteger(value))
@@ -137,13 +137,13 @@ ResultCode setData(Node *node, const String *value)
             printf("ERROR: cannot set data. Not a valid integer value.\n");
             return CODE_ERROR;
         }
-        *((int *)node->data) = atoi(string_cStr(value));
+        *((int *)node->data) = atoi(types_string_c_str(value));
         return CODE_OK;
     case NODE_TYPE_BOOLEAN:;
         Boolean boolean = booleanStringToCode(value);
         if (boolean == BOOL_UNKNOWN)
         {
-            printf("ERROR: cannot set data. '%s' is not a valid boolean value.\n", string_cStr(value));
+            printf("ERROR: cannot set data. '%s' is not a valid boolean value.\n", types_string_c_str(value));
             return CODE_ERROR;
         }
         *((Boolean *)node->data) = boolean;
@@ -156,9 +156,9 @@ ResultCode setData(Node *node, const String *value)
 // Receives a number as a string and checks if it is valid.
 static int isInteger(const String *string)
 {
-    for (size_t i = 0, n = string_length(string); i < n; i++)
+    for (size_t i = 0, n = types_string_length(string); i < n; i++)
     {
-        if (!isdigit(string_at(string, i)))
+        if (!isdigit(types_string_at(string, i)))
         {
             return 0;
         }
@@ -191,7 +191,7 @@ static ResultCode initializeData(Node *node)
         return CODE_OK;
     case NODE_TYPE_STRING:
         // Create space for a string and initialize it to empty.
-        node->data = string_create();
+        node->data = types_string_create();
         return CODE_OK;
     case NODE_TYPE_NUMBER:
         // Create space for an integer and store a zero.
@@ -205,7 +205,7 @@ static ResultCode initializeData(Node *node)
         return CODE_OK;
     case NODE_TYPE_OBJECT:
         // Initialize an object data structure.
-        node->data = vector_create(sizeof(Node *), &node_free);
+        node->data = types_vector_create(sizeof(Node *), &node_free);
         return CODE_OK;
     case NODE_TYPE_ARRAY:
         // TODO: reset data in an array node.
@@ -236,17 +236,17 @@ int validateType(NodeType type)
 // Gets the boolean as a string and returns its code.
 Boolean booleanStringToCode(const String *string)
 {
-    if (string_compare(string, string_createFromLiteral("true")) == 0)
+    if (types_string_compare(string, types_string_create_from_literal("true")) == 0)
     {
         return BOOL_TRUE;
     }
-    else if (string_compare(string, string_createFromLiteral("false")) == 0)
+    else if (types_string_compare(string, types_string_create_from_literal("false")) == 0)
     {
         return BOOL_FALSE;
     }
     else
     {
-        printf("ERROR. %s is not a valid boolean type.\n", string_cStr(string));
+        printf("ERROR. %s is not a valid boolean type.\n", types_string_c_str(string));
         return BOOL_UNKNOWN;
     }
 }
@@ -258,9 +258,9 @@ String *booleanCodeToString(Boolean code)
     switch (code)
     {
     case BOOL_TRUE:
-        return string_createFromLiteral("true");
+        return types_string_create_from_literal("true");
     case BOOL_FALSE:
-        return string_createFromLiteral("false");
+        return types_string_create_from_literal("false");
     default:
         printf("ERROR: boolean code is not valid.\n");
         return NULL;
@@ -278,33 +278,33 @@ NodeType typeStringToCode(const String *string)
     }
 
     // Decide depending on the string.
-    if (string_compare(string, string_createFromLiteral("null")) == 0)
+    if (types_string_compare(string, types_string_create_from_literal("null")) == 0)
     {
         return NODE_TYPE_NULL;
     }
-    else if (string_compare(string, string_createFromLiteral("string")) == 0)
+    else if (types_string_compare(string, types_string_create_from_literal("string")) == 0)
     {
         return NODE_TYPE_STRING;
     }
-    else if (string_compare(string, string_createFromLiteral("integer")) == 0)
+    else if (types_string_compare(string, types_string_create_from_literal("integer")) == 0)
     {
         return NODE_TYPE_NUMBER;
     }
-    else if (string_compare(string, string_createFromLiteral("boolean")) == 0)
+    else if (types_string_compare(string, types_string_create_from_literal("boolean")) == 0)
     {
         return NODE_TYPE_BOOLEAN;
     }
-    else if (string_compare(string, string_createFromLiteral("array")) == 0)
+    else if (types_string_compare(string, types_string_create_from_literal("array")) == 0)
     {
         return NODE_TYPE_ARRAY;
     }
-    else if (string_compare(string, string_createFromLiteral("object")) == 0)
+    else if (types_string_compare(string, types_string_create_from_literal("object")) == 0)
     {
         return NODE_TYPE_OBJECT;
     }
     else
     {
-        printf("ERROR: could not convert string '%s' to a valid type.\n", string_cStr(string));
+        printf("ERROR: could not convert string '%s' to a valid type.\n", types_string_c_str(string));
         return NODE_TYPE_NULL;
     }
 }
