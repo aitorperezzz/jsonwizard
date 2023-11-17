@@ -4,18 +4,28 @@
         "**/*.dSYM": true,
         "**/*.o": true,
         "jsonwizard": true,
-        "test/test_iterator": true,
-        "test/test_string_type": true,
-        "test/test_vector": true
+        "testjsonwizard": true
     },
     "C_Cpp.default.includePath": [
-        "src"
+        "src/**"
     ],
     "files.associations": {
         "vector.h": "c",
         "istream": "c",
         "*.tcc": "c",
         "string.h": "c",
-        "setjmp.h": "c"
+        "setjmp.h": "c",
+        "utils.h": "c",
+        "iterator.h": "c",
+        "array": "c",
+        "deque": "c",
+        "string": "c",
+        "unordered_map": "c",
+        "vector": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "stdlib.h": "c",
+        "parser_sm.h": "c",
+        "types_iterator.h": "c"
     }
 }
