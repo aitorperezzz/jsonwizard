@@ -1,5 +1,8 @@
+#ifndef PARSER_SM_H
+#define PARSER_SM_H
 
-#include "vector.h"
+#include "types/types_vector.h"
+#include "types/types_string.h"
 
 typedef struct State_st
 {
@@ -16,7 +19,7 @@ typedef struct Transition_st
 typedef struct StateMachine_st
 {
     Vector *states;
-    int acceptanceState;
+    int acceptance_state;
 } StateMachine;
 
 typedef struct TransitionDefSt
@@ -26,9 +29,14 @@ typedef struct TransitionDefSt
     int destination;
 } TransitionDef;
 
-StateMachine *
-parser_sm_create();
+StateMachine *parser_sm_create();
 
-State *parser_sm_add_state(StateMachine *sm, int id);
+ResultCode parser_sm_add_state(StateMachine *sm, int id);
 
-ResultCode parser_sm_add_tranistion(State *state, Transition *transition);
+ResultCode parser_sm_add_tranistions(StateMachine *sm, TransitionDef *transition_defs, const size_t number);
+
+ResultCode parser_sm_define_acceptance_state(StateMachine *sm, int state);
+
+ResultCode parser_sm_execute(const StateMachine *sm, const String *string, bool *success, char *offset);
+
+#endif
