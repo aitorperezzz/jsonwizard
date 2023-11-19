@@ -5,7 +5,7 @@
 #include "types/types_vector.h"
 #include "types/types_map.h"
 #include "write.h"
-#include "read.h"
+#include "read/read.h"
 
 Node *node_create()
 {
@@ -113,7 +113,8 @@ ResultCode node_erase(Node *node)
     switch (node->parent->type)
     {
     case NODE_TYPE_NULL:
-    case NODE_TYPE_BOOLEAN:
+    case NODE_TYPE_TRUE:
+    case NODE_TYPE_FALSE:
     case NODE_TYPE_NUMBER:
     case NODE_TYPE_STRING:
         return CODE_MEMORY_ERROR;
@@ -312,7 +313,8 @@ ResultCode node_free(void *node)
     {
     case NODE_TYPE_NULL:
     case NODE_TYPE_NUMBER:
-    case NODE_TYPE_BOOLEAN:
+    case NODE_TYPE_TRUE:
+    case NODE_TYPE_FALSE:
         break;
     case NODE_TYPE_STRING:
         result = types_string_free(my_node->data);

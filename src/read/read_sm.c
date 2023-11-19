@@ -1,6 +1,6 @@
-#include "parser_sm.h"
+#include "read_sm.h"
 
-static ResultCode parser_sm_free(void *data)
+static ResultCode read_sm_free(void *data)
 {
     // The data pointed at is itself a StateMachine
     if (data == NULL)
@@ -16,14 +16,14 @@ static ResultCode parser_sm_free(void *data)
     return CODE_OK;
 }
 
-StateMachine *parser_sm_create()
+StateMachine *read_sm_create()
 {
     StateMachine *sm = malloc(sizeof(StateMachine));
     if (sm == NULL)
     {
         return NULL;
     }
-    sm->states = types_vector_create(sizeof(StateMachine), parser_sm_free);
+    sm->states = types_vector_create(sizeof(StateMachine), read_sm_free);
     if (sm->states == NULL)
     {
         free(sm);
@@ -33,7 +33,7 @@ StateMachine *parser_sm_create()
     return sm;
 }
 
-ResultCode parser_sm_add_state(StateMachine *sm, int id)
+ResultCode read_sm_add_state(StateMachine *sm, int id)
 {
     if (sm == NULL)
     {
@@ -47,7 +47,7 @@ ResultCode parser_sm_add_state(StateMachine *sm, int id)
     return CODE_OK;
 }
 
-ResultCode parser_sm_add_tranistions(StateMachine *sm, TransitionDef *transition_defs, const size_t number)
+ResultCode read_sm_add_tranistions(StateMachine *sm, TransitionDef *transition_defs, const size_t number)
 {
     if (sm == NULL || transition_defs == NULL)
     {
@@ -85,7 +85,7 @@ ResultCode parser_sm_add_tranistions(StateMachine *sm, TransitionDef *transition
     return CODE_OK;
 }
 
-ResultCode parser_sm_define_acceptance_state(StateMachine *sm, int state)
+ResultCode read_sm_define_acceptance_state(StateMachine *sm, int state)
 {
     if (sm == NULL)
     {
@@ -103,7 +103,7 @@ ResultCode parser_sm_define_acceptance_state(StateMachine *sm, int state)
     return CODE_OK;
 }
 
-ResultCode parser_sm_execute(const StateMachine *sm, const String *string, bool *success, char *offset)
+ResultCode read_sm_execute(const StateMachine *sm, const String *string, bool *success, size_t *offset)
 {
     if (sm == NULL || string == NULL || success == NULL || offset == NULL)
     {

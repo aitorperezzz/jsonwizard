@@ -1,5 +1,5 @@
-#ifndef PARSER_SM_H
-#define PARSER_SM_H
+#ifndef READ_SM_H
+#define READ_SM_H
 
 #include "types/types_vector.h"
 #include "types/types_string.h"
@@ -29,14 +29,14 @@ typedef struct TransitionDefSt
     int destination;
 } TransitionDef;
 
-StateMachine *parser_sm_create();
+StateMachine *read_sm_create();
 
-ResultCode parser_sm_add_state(StateMachine *sm, int id);
+ResultCode read_sm_add_state(StateMachine *sm, int id);
 
-ResultCode parser_sm_add_tranistions(StateMachine *sm, TransitionDef *transition_defs, const size_t number);
+ResultCode read_sm_add_tranistions(StateMachine *sm, TransitionDef *transition_defs, const size_t number);
 
-ResultCode parser_sm_define_acceptance_state(StateMachine *sm, int state);
+ResultCode read_sm_define_acceptance_state(StateMachine *sm, int state);
 
-ResultCode parser_sm_execute(const StateMachine *sm, const String *string, bool *success, char *offset);
+ResultCode read_sm_execute(const StateMachine *sm, const String *string, bool *success, size_t *offset);
 
 #endif

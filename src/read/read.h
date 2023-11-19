@@ -1,8 +1,10 @@
-#ifndef PARSER_H
-#define PARSER_H
+#ifndef READ_H
+#define READ_H
 
 #include "utils.h"
 #include "node.h"
+
+ResultCode read_initialise();
 
 Node *read_from_file(const String *filename);
 

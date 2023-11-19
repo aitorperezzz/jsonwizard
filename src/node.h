@@ -10,7 +10,8 @@ typedef enum
     NODE_TYPE_NULL,
     NODE_TYPE_STRING,
     NODE_TYPE_NUMBER,
-    NODE_TYPE_BOOLEAN,
+    NODE_TYPE_TRUE,
+    NODE_TYPE_FALSE,
     NODE_TYPE_ARRAY,
     NODE_TYPE_OBJECT
 } NodeType;
@@ -56,5 +57,7 @@ size_t node_array_size(Node *node);
 Node *node_array_get(Node *node, size_t index);
 
 ResultCode node_free(void *node);
+
+Node *node_copy(const Node *node);
 
 #endif

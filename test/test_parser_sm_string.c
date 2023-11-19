@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-#include "parser/parser_sm_string.h"
+#include "read/read_sm.h"
 
-static void test_parser_sm_string(void **state)
+static void test_read_sm(void **state)
 {
 }

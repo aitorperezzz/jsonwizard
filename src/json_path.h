@@ -4,7 +4,7 @@
 #include "types/types_vector.h"
 #include "types/types_string.h"
 
-enum PathStepId_e
+enum PathStepId
 {
     PATH_STEP_INDEX,
     PATH_STEP_KEY
@@ -18,7 +18,7 @@ union PathStepData_u
 
 typedef struct PathStep_st
 {
-    enum PathStepId_e id;
+    enum PathStepId id;
     union PathStepData_u data;
 } PathStep;
 

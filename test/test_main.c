@@ -11,7 +11,7 @@
 int main(void)
 {
     const struct CMUnitTest tests[] = {
-        // string_type
+        // string
         cmocka_unit_test(test_types_string_create),
         cmocka_unit_test(test_types_string_create_from_literal),
         cmocka_unit_test(test_types_string_create_from_buffer),
@@ -47,8 +47,8 @@ int main(void)
         cmocka_unit_test(test_types_vector_erase),
         cmocka_unit_test(test_types_vector_insert),
         cmocka_unit_test(test_types_vector_empty),
-        // parser_string
-        cmocka_unit_test(test_parser_sm_string),
+        // read
+        cmocka_unit_test(test_read_sm),
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }
